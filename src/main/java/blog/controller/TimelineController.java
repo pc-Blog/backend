@@ -7,9 +7,12 @@ import blog.entity.Timeline;
 import blog.service.TimelineService;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -20,6 +23,16 @@ public class TimelineController {
 
     public TimelineController(TimelineService timelineService) {
         this.timelineService = timelineService;
+    }
+
+    @GetMapping("/list")
+    public Result<List<Timeline>> list() {
+        log.info("访客端查询时间线列表");
+        List<Timeline> list = timelineService.list(
+                new LambdaQueryWrapper<Timeline>()
+                        .eq(Timeline::getDeleted, 0)
+                        .orderByDesc(Timeline::getEventDate));
+        return Result.success(list);
     }
 
     @GetMapping("/{id}")

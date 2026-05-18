@@ -9,7 +9,16 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -28,25 +37,47 @@ public class MediaController {
         return Result.success(mediaService.getById(id));
     }
 
-    @PostMapping
-    public Result<Void> save(@Valid @RequestBody Media media) {
-        log.info("新增媒体文件:{}", JSON.toJSONString(media, SerializerFeature.PrettyFormat));
-        mediaService.save(media);
-        return Result.success();
+    @PostMapping("/upload")
+    public Result<Media> upload(@RequestParam("file") MultipartFile file,
+                                @RequestParam(value = "relationType", required = false) String relationType) {
+        log.info("上传文件, 原始文件名:{}, 大小:{}, 类型:{}",
+                file.getOriginalFilename(), file.getSize(), file.getContentType());
+        Media media = mediaService.upload(file, relationType);
+        log.info("上传成功:{}", JSON.toJSONString(media, SerializerFeature.PrettyFormat));
+        return Result.success(media);
+    }
+
+    @GetMapping("/{id}/download")
+    public ResponseEntity<InputStreamResource> download(@PathVariable Long id) {
+        log.info("下载文件, id:{}", id);
+        Media media = mediaService.getById(id);
+        InputStream stream = mediaService.download(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(media.getMimeType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"" + media.getOriginalFilename() + "\"")
+                .body(new InputStreamResource(stream));
     }
 
     @PutMapping
     public Result<Void> update(@Valid @RequestBody Media media) {
-        log.info("更新媒体文件:{}", JSON.toJSONString(media, SerializerFeature.PrettyFormat));
+        log.info("更新媒体文件元数据:{}", JSON.toJSONString(media, SerializerFeature.PrettyFormat));
         mediaService.updateById(media);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
-        log.info("删除媒体文件, id:{}", id);
-        mediaService.removeById(id);
+        log.info("删除媒体文件(含MinIO文件), id:{}", id);
+        mediaService.deleteWithFile(id);
         return Result.success();
+    }
+
+    @DeleteMapping("/batch")
+    public Result<Map<String, Object>> batchDelete(@RequestBody List<Long> ids) {
+        log.info("批量删除媒体文件, ids:{}", ids);
+        Map<String, Object> result = mediaService.batchDelete(ids);
+        return Result.success(result);
     }
 
     @PostMapping("/page")

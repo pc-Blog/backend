@@ -3,9 +3,12 @@ package blog.controller;
 import blog.common.PageDTO;
 import blog.common.PageVO;
 import blog.common.Result;
+import blog.dto.ArticleQueryDTO;
 import blog.dto.ArticleSaveRequest;
 import blog.entity.Article;
 import blog.service.ArticleService;
+import blog.vo.ArticleDetailVO;
+import blog.vo.ArticleListVO;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import jakarta.validation.Valid;
@@ -23,6 +26,31 @@ public class ArticleController {
         this.articleService = articleService;
     }
 
+    // ==================== 访客端 ====================
+
+    @PostMapping("/public/page")
+    public Result<PageVO<ArticleListVO>> publicPage(@RequestBody PageDTO<ArticleQueryDTO> dto) {
+        log.info("访客端分页查询文章:{}", JSON.toJSONString(dto, SerializerFeature.PrettyFormat));
+        return Result.success(articleService.publicPage(dto.getPageNum(), dto.getPageSize(), dto.getQuery()));
+    }
+
+    @GetMapping("/public/{id}")
+    public Result<ArticleDetailVO> publicDetail(@PathVariable Long id) {
+        log.info("访客端查看文章详情, id:{}", id);
+        ArticleDetailVO detail = articleService.publicDetail(id);
+        articleService.incrementViewCount(id);
+        return Result.success(detail);
+    }
+
+    @PutMapping("/{id}/view")
+    public Result<Void> view(@PathVariable Long id) {
+        log.info("增加文章阅读量, id:{}", id);
+        articleService.incrementViewCount(id);
+        return Result.success();
+    }
+
+    // ==================== 管理端 ====================
+
     @GetMapping("/{id}")
     public Result<Article> getById(@PathVariable Long id) {
         log.info("根据ID查询文章, id:{}", id);
@@ -30,10 +58,10 @@ public class ArticleController {
     }
 
     @PostMapping
-    public Result<Void> save(@Valid @RequestBody ArticleSaveRequest request) {
+    public Result<Article> save(@Valid @RequestBody ArticleSaveRequest request) {
         log.info("新增文章:{}", JSON.toJSONString(request, SerializerFeature.PrettyFormat));
         articleService.saveWithTags(request, request.getTagIds());
-        return Result.success();
+        return Result.success(request);
     }
 
     @PutMapping
@@ -52,7 +80,28 @@ public class ArticleController {
 
     @PostMapping("/page")
     public Result<PageVO<Article>> page(@RequestBody PageDTO<Article> dto) {
-        log.info("分页查询文章:{}", JSON.toJSONString(dto, SerializerFeature.PrettyFormat));
+        log.info("管理端分页查询文章:{}", JSON.toJSONString(dto, SerializerFeature.PrettyFormat));
         return Result.success(articleService.page(dto));
+    }
+
+    @PutMapping("/{id}/publish")
+    public Result<Void> publish(@PathVariable Long id) {
+        log.info("发布文章, id:{}", id);
+        articleService.publish(id);
+        return Result.success();
+    }
+
+    @PutMapping("/{id}/unpublish")
+    public Result<Void> unpublish(@PathVariable Long id) {
+        log.info("下架文章, id:{}", id);
+        articleService.unpublish(id);
+        return Result.success();
+    }
+
+    @PutMapping("/{id}/pin")
+    public Result<Void> togglePin(@PathVariable Long id) {
+        log.info("切换文章置顶, id:{}", id);
+        articleService.togglePin(id);
+        return Result.success();
     }
 }

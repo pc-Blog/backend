@@ -21,7 +21,6 @@ public class Comment {
     @NotNull(message = "评论所属文章不能为空")
     private Long articleId;
 
-    @NotBlank(message = "评论昵称不能为空")
     @Size(max = 64, message = "评论昵称不能超过64个字符")
     private String authorName;
 
@@ -31,6 +30,7 @@ public class Comment {
     @NotBlank(message = "评论内容不能为空")
     private String content;
 
+    private Long userId;
     private String userAgent;
     private String ipAddress;
 

@@ -7,9 +7,12 @@ import blog.entity.Skill;
 import blog.service.SkillService;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -20,6 +23,16 @@ public class SkillController {
 
     public SkillController(SkillService skillService) {
         this.skillService = skillService;
+    }
+
+    @GetMapping("/list")
+    public Result<List<Skill>> list() {
+        log.info("访客端查询技能列表");
+        List<Skill> list = skillService.list(
+                new LambdaQueryWrapper<Skill>()
+                        .eq(Skill::getDeleted, 0)
+                        .orderByDesc(Skill::getProficiency));
+        return Result.success(list);
     }
 
     @GetMapping("/{id}")

@@ -1,7 +1,7 @@
 spring:
   config:
     import:
-      - optional:classpath:args-dev.yaml
+      - optional:classpath:args.yaml
   servlet:
     multipart:
       max-file-size: 100MB

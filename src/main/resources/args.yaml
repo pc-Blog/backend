@@ -2,7 +2,7 @@
 
 postgresql:
   url: "bg-postgres"
-  port: 15432
+  port: 5432
   username: postgres
   password: 123456
 
@@ -20,5 +20,18 @@ minio:
   accessKey: minioadmin  # 访问密钥（默认 minioadmin）
   secretKey: minioadmin  # 密钥（默认 minioadmin）
   bucket: blog
+
+github:
+  client-id: Iv23liAI2h53TjkCBu67
+  client-secret: 【必填】OAuth Client Secret（从 git 历史清理，请轮换后回填）
+  redirect-uri: http://localhost:8080/api/auth/github/callback
+
+jwt:
+  secret: 【必填】JWT 签名密钥（从 git 历史清理，请轮换后回填）
+  expiration: 604800
+
+op:
+  url: http://host.docker.internal
+  port: 8016
 
 

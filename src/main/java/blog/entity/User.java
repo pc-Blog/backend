@@ -32,6 +32,8 @@ public class User {
     @Email(message = "邮箱格式不正确")
     private String email;
 
+    private String githubId;
+
     @TableLogic(value = "0", delval = "1")
     private Integer deleted;
     private LocalDateTime createTime;

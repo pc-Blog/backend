@@ -31,6 +31,8 @@ public class Media {
     @NotBlank(message = "MIME类型不能为空")
     private String mimeType;
 
+    private String relationType;
+
     @TableLogic(value = "0", delval = "1")
     private Integer deleted;
     private LocalDateTime createTime;

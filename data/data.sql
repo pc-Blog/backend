@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS t_user (
     nickname    VARCHAR(64),
     avatar      VARCHAR(512),
     email       VARCHAR(128),
+    github_id   VARCHAR(32),
     deleted     INTEGER         NOT NULL DEFAULT 0,
     create_time TIMESTAMP       NOT NULL DEFAULT NOW(),
     update_time TIMESTAMP
@@ -131,6 +132,7 @@ CREATE TABLE IF NOT EXISTS t_comment (
     author_name  VARCHAR(64)    NOT NULL,
     author_email VARCHAR(128),
     content      TEXT           NOT NULL,
+    user_id      BIGINT,
     user_agent   VARCHAR(512),
     ip_address   VARCHAR(64),
     deleted      INTEGER        NOT NULL DEFAULT 0,
@@ -149,6 +151,7 @@ CREATE TABLE IF NOT EXISTS t_media (
     file_url          VARCHAR(512),
     file_size         BIGINT,
     mime_type         VARCHAR(128),
+    relation_type     VARCHAR(32),
     deleted           INTEGER      NOT NULL DEFAULT 0,
     create_time       TIMESTAMP    NOT NULL DEFAULT NOW(),
     update_time       TIMESTAMP

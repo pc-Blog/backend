@@ -21,4 +21,16 @@ minio:
   secretKey: minioadmin  # 密钥（默认 minioadmin）
   bucket: blog
 
+github:
+  client-id: Iv23liAI2h53TjkCBu67
+  client-secret: 【必填】OAuth Client Secret（从 git 历史清理，请轮换后回填）
+  redirect-uri: http://localhost:8080/api/auth/github/callback
+
+jwt:
+  secret: 【必填】JWT 签名密钥（从 git 历史清理，请轮换后回填）
+  expiration: 604800
+
+op:
+  url: http://localhost
+  port: 8016
 

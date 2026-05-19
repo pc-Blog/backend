@@ -92,7 +92,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     + "&code=" + code
                     + "&redirect_uri=" + redirectUri;
 
-            var httpClient = HttpClient.newHttpClient();
+            var httpClient = createHttpClient();
             var tokenReq = HttpRequest.newBuilder()
                     .uri(URI.create(tokenUrl))
                     .header("Accept", "application/json")
@@ -163,6 +163,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         u.put("avatar", user.getAvatar());
         u.put("email", user.getEmail());
         return u;
+    }
+
+    private static java.net.http.HttpClient createHttpClient() {
+        try {
+            var trustAll = new javax.net.ssl.TrustManager[]{
+                new javax.net.ssl.X509TrustManager() {
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[0]; }
+                    public void checkClientTrusted(java.security.cert.X509Certificate[] c, String a) {}
+                    public void checkServerTrusted(java.security.cert.X509Certificate[] c, String a) {}
+                }
+            };
+            var sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
+            sslContext.init(null, trustAll, new java.security.SecureRandom());
+            return java.net.http.HttpClient.newBuilder()
+                    .sslContext(sslContext)
+                    .build();
+        } catch (Exception e) {
+            throw new BaseException("SSL初始化失败: " + e.getMessage());
+        }
     }
 
     private void checkUsernameUnique(String username, Long excludeId) {

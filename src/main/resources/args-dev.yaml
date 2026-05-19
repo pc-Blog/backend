@@ -30,6 +30,9 @@ jwt:
   secret: 【必填】JWT 签名密钥（从 git 历史清理，请轮换后回填）
   expiration: 604800
 
+frontend:
+  url: http://localhost:3000
+
 op:
   url: http://localhost
   port: 8016

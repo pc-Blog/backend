@@ -3,8 +3,10 @@ package blog.service;
 import blog.entity.About;
 import com.baomidou.mybatisplus.extension.service.IService;
 
-public interface AboutService extends IService<About> {
-    About getAbout();
+import java.util.Map;
 
-    boolean updateAbout(About about);
+public interface AboutService extends IService<About> {
+    Map<String, String> getAboutMap();
+
+    void updateAboutMap(Map<String, String> map);
 }

@@ -1,13 +1,13 @@
 package blog.controller;
 
 import blog.common.Result;
-import blog.entity.About;
 import blog.service.AboutService;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
-import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -21,15 +21,15 @@ public class AboutController {
     }
 
     @GetMapping
-    public Result<About> get() {
+    public Result<Map<String, String>> get() {
         log.info("查询关于信息");
-        return Result.success(aboutService.getAbout());
+        return Result.success(aboutService.getAboutMap());
     }
 
     @PutMapping
-    public Result<Void> update(@Valid @RequestBody About about) {
-        log.info("更新关于信息:{}", JSON.toJSONString(about, SerializerFeature.PrettyFormat));
-        aboutService.updateAbout(about);
+    public Result<Void> update(@RequestBody Map<String, String> map) {
+        log.info("更新关于信息:{}", JSON.toJSONString(map, SerializerFeature.PrettyFormat));
+        aboutService.updateAboutMap(map);
         return Result.success();
     }
 }

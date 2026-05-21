@@ -113,16 +113,15 @@ CREATE TABLE IF NOT EXISTS t_skill (
     update_time TIMESTAMP
 );
 
--- 9. About Me (single-row by convention, admin reads/writes id=1)
+-- 9. About Me (key-value store for extensible personal info)
 CREATE TABLE IF NOT EXISTS t_about (
-    id             BIGSERIAL    PRIMARY KEY,
-    content        TEXT,
-    contact_email  VARCHAR(128),
-    github_url     VARCHAR(512),
-    social_links   TEXT,                      -- JSON array of {name, url}
-    deleted        INTEGER      NOT NULL DEFAULT 0,
-    create_time    TIMESTAMP    NOT NULL DEFAULT NOW(),
-    update_time    TIMESTAMP
+    id          BIGSERIAL    PRIMARY KEY,
+    item_key    VARCHAR(64)  NOT NULL,
+    item_value  TEXT,
+    sort_order  INTEGER      NOT NULL DEFAULT 0,
+    deleted     INTEGER      NOT NULL DEFAULT 0,
+    create_time TIMESTAMP    NOT NULL DEFAULT NOW(),
+    update_time TIMESTAMP
 );
 
 -- 10. Article Comment (guest, no moderation)

@@ -16,8 +16,12 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
 
     @Override
     public PageVO<Skill> page(PageDTO<Skill> dto) {
+        var wrapper = new LambdaQueryWrapper<Skill>().eq(Skill::getDeleted, 0);
+        Skill query = dto.getQuery();
+        if (query != null && query.getName() != null && !query.getName().isBlank())
+            wrapper.like(Skill::getName, query.getName());
         var page = PageUtil.<Skill>toPage(dto);
-        page(page);
+        page(page, wrapper);
         return new PageVO<>(page.getTotal(), page.getRecords());
     }
 

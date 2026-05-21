@@ -9,6 +9,7 @@ import blog.mapper.ArticleMapper;
 import blog.mapper.CommentMapper;
 import blog.service.CommentService;
 import blog.util.PageUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
@@ -23,8 +24,12 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
     @Override
     public PageVO<Comment> page(PageDTO<Comment> dto) {
+        var wrapper = new LambdaQueryWrapper<Comment>().eq(Comment::getDeleted, 0);
+        Comment query = dto.getQuery();
+        if (query != null && query.getContent() != null && !query.getContent().isBlank())
+            wrapper.like(Comment::getContent, query.getContent());
         var page = PageUtil.<Comment>toPage(dto);
-        page(page);
+        page(page, wrapper);
         return new PageVO<>(page.getTotal(), page.getRecords());
     }
 

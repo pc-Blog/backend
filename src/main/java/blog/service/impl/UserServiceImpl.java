@@ -44,8 +44,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public PageVO<User> page(PageDTO<User> dto) {
+        var wrapper = new LambdaQueryWrapper<User>().eq(User::getDeleted, 0);
+        User query = dto.getQuery();
+        if (query != null && query.getUsername() != null && !query.getUsername().isBlank())
+            wrapper.like(User::getUsername, query.getUsername());
+        if (query != null && query.getNickname() != null && !query.getNickname().isBlank())
+            wrapper.like(User::getNickname, query.getNickname());
         var page = PageUtil.<User>toPage(dto);
-        page(page);
+        page(page, wrapper);
         return new PageVO<>(page.getTotal(), page.getRecords());
     }
 

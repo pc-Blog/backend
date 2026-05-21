@@ -3,6 +3,7 @@ package blog.vo;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class ProjectListVO {
@@ -12,7 +13,7 @@ public class ProjectListVO {
     private String coverImage;
     private Long categoryId;
     private String categoryName;
-    private String techStack;
+    private List<TechnologyVO> techs;
     private String githubUrl;
     private String demoUrl;
     private Integer sortOrder;

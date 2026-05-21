@@ -43,10 +43,24 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     // ==================== 管理端 ====================
 
     @Override
-    public PageVO<Article> page(PageDTO<Article> dto) {
+    public PageVO<ArticleListVO> adminPage(PageDTO<Article> dto) {
+        Article query = dto.getQuery();
+        var wrapper = new LambdaQueryWrapper<Article>().eq(Article::getDeleted, 0);
+
+        if (query != null) {
+            if (query.getTitle() != null && !query.getTitle().isBlank())
+                wrapper.like(Article::getTitle, query.getTitle());
+            if (query.getCategoryId() != null)
+                wrapper.eq(Article::getCategoryId, query.getCategoryId());
+            if (query.getIsPublished() != null)
+                wrapper.eq(Article::getIsPublished, query.getIsPublished());
+        }
+
+        wrapper.orderByDesc(Article::getIsPinned).orderByDesc(Article::getCreateTime);
+
         var page = PageUtil.<Article>toPage(dto);
-        page(page);
-        return new PageVO<>(page.getTotal(), page.getRecords());
+        page(page, wrapper);
+        return new PageVO<>(page.getTotal(), page.getRecords().stream().map(this::toListVO).collect(Collectors.toList()));
     }
 
     @Override
@@ -170,6 +184,18 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         }
 
         return new PageVO<>(page.getTotal(), rows);
+    }
+
+    @Override
+    public ArticleDetailVO adminDetail(Long id) {
+        Article article = getById(id);
+        if (article == null || article.getDeleted() == 1) {
+            throw new BaseException("文章不存在");
+        }
+        ArticleDetailVO vo = new ArticleDetailVO();
+        copyToListVO(article, vo);
+        vo.setContent(article.getContent());
+        return vo;
     }
 
     @Override

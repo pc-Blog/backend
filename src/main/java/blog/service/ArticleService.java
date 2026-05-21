@@ -11,7 +11,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import java.util.List;
 
 public interface ArticleService extends IService<Article> {
-    PageVO<Article> page(PageDTO<Article> dto);
+    PageVO<ArticleListVO> adminPage(PageDTO<Article> dto);
 
     boolean saveWithTags(Article article, List<Long> tagIds);
 
@@ -20,6 +20,8 @@ public interface ArticleService extends IService<Article> {
     PageVO<ArticleListVO> publicPage(int pageNum, int pageSize, ArticleQueryDTO query);
 
     ArticleDetailVO publicDetail(Long id);
+
+    ArticleDetailVO adminDetail(Long id);
 
     void incrementViewCount(Long id);
 

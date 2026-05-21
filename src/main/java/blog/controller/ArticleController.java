@@ -52,9 +52,11 @@ public class ArticleController {
     // ==================== 管理端 ====================
 
     @GetMapping("/{id}")
-    public Result<Article> getById(@PathVariable Long id) {
+    public Result<ArticleDetailVO> getById(@PathVariable Long id) {
         log.info("根据ID查询文章, id:{}", id);
-        return Result.success(articleService.getById(id));
+        Article article = articleService.getById(id);
+        if (article == null) return Result.error("文章不存在");
+        return Result.success(articleService.adminDetail(id));
     }
 
     @PostMapping
@@ -79,9 +81,9 @@ public class ArticleController {
     }
 
     @PostMapping("/page")
-    public Result<PageVO<Article>> page(@RequestBody PageDTO<Article> dto) {
+    public Result<PageVO<ArticleListVO>> page(@RequestBody PageDTO<Article> dto) {
         log.info("管理端分页查询文章:{}", JSON.toJSONString(dto, SerializerFeature.PrettyFormat));
-        return Result.success(articleService.page(dto));
+        return Result.success(articleService.adminPage(dto));
     }
 
     @PutMapping("/{id}/publish")

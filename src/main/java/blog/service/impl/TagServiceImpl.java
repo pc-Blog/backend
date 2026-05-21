@@ -16,8 +16,12 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
 
     @Override
     public PageVO<Tag> page(PageDTO<Tag> dto) {
+        var wrapper = new LambdaQueryWrapper<Tag>().eq(Tag::getDeleted, 0);
+        Tag query = dto.getQuery();
+        if (query != null && query.getName() != null && !query.getName().isBlank())
+            wrapper.like(Tag::getName, query.getName());
         var page = PageUtil.<Tag>toPage(dto);
-        page(page);
+        page(page, wrapper);
         return new PageVO<>(page.getTotal(), page.getRecords());
     }
 

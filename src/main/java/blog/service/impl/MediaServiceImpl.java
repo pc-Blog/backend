@@ -45,8 +45,14 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
 
     @Override
     public PageVO<Media> page(PageDTO<Media> dto) {
+        var wrapper = new LambdaQueryWrapper<Media>().eq(Media::getDeleted, 0);
+        Media query = dto.getQuery();
+        if (query != null && query.getFilename() != null && !query.getFilename().isBlank())
+            wrapper.like(Media::getFilename, query.getFilename());
+        if (query != null && query.getOriginalFilename() != null && !query.getOriginalFilename().isBlank())
+            wrapper.like(Media::getOriginalFilename, query.getOriginalFilename());
         var page = PageUtil.<Media>toPage(dto);
-        page(page);
+        page(page, wrapper);
         return new PageVO<>(page.getTotal(), page.getRecords());
     }
 

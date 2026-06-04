@@ -1,7 +1,6 @@
 package blog.controller;
 
 import blog.common.Result;
-import blog.exception.BaseException;
 import blog.service.UserService;
 import blog.util.JwtUtil;
 import com.alibaba.fastjson.JSON;

@@ -38,7 +38,6 @@ public class ArticleController {
     public Result<ArticleDetailVO> publicDetail(@PathVariable Long id) {
         log.info("访客端查看文章详情, id:{}", id);
         ArticleDetailVO detail = articleService.publicDetail(id);
-        articleService.incrementViewCount(id);
         return Result.success(detail);
     }
 

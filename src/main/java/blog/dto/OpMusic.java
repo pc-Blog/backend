@@ -9,4 +9,5 @@ public class OpMusic {
     private int duration;
     private String url;
     private String pictureUrl;
+    private boolean isFavorite;
 }

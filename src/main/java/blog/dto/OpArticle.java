@@ -8,8 +8,7 @@ import java.util.List;
 public class OpArticle {
     private Long id;
     private String title;
-    private String fileName;
-    private String weather;
+    private String content;
     private String writtenAt;
     private List<Long> tagIds;
 }

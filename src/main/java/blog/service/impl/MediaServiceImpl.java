@@ -26,7 +26,7 @@ import java.util.*;
 @Service
 public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements MediaService {
 
-    private static final long MAX_SIZE = 10 * 1024 * 1024;
+    private static final long MAX_SIZE = 100 * 1024 * 1024;
     private static final Set<String> ALLOWED_TYPES = Set.of(
             "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
             "application/pdf",
@@ -63,7 +63,7 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
             throw new BaseException("请选择文件");
         }
         if (file.getSize() > MAX_SIZE) {
-            throw new BaseException("文件大小不能超过10MB");
+            throw new BaseException("文件大小不能超过100MB");
         }
 
         String contentType = file.getContentType();

@@ -247,6 +247,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         vo.setIsPublished(article.getIsPublished());
         vo.setViewCount(article.getViewCount());
         vo.setCreatedAt(article.getCreatedAt());
+        vo.setUpdateTime(article.getUpdateTime());
 
         // 分类名
         Category category = categoryMapper.selectById(article.getCategoryId());

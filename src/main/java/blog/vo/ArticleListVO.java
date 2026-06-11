@@ -19,4 +19,5 @@ public class ArticleListVO {
     private Long viewCount;
     private Long commentCount;
     private LocalDateTime createdAt;
+    private LocalDateTime updateTime;
 }

@@ -140,9 +140,8 @@ public class OpController {
                 })
                 .block();
 
-        // 随机取10个
         if (block != null) {
-            return Result.success(new PageVO<>(block.getData().getTotal(), block.getData().getRows().subList(0, 10)));
+            return Result.success(new PageVO<>(block.getData().getTotal(), block.getData().getRows()));
         } else {
             return Result.error("获取音乐失败");
         }

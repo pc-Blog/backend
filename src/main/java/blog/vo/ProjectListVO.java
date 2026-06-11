@@ -19,4 +19,5 @@ public class ProjectListVO {
     private Integer sortOrder;
     private Integer isPublished;
     private LocalDateTime createTime;
+    private LocalDateTime updateTime;
 }

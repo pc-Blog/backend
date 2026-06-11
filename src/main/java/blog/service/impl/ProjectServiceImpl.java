@@ -174,6 +174,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
         vo.setSortOrder(project.getSortOrder());
         vo.setIsPublished(project.getIsPublished());
         vo.setCreateTime(project.getCreateTime());
+        vo.setUpdateTime(project.getUpdateTime());
 
         Category category = categoryMapper.selectById(project.getCategoryId());
         vo.setCategoryName(category != null ? category.getName() : null);

@@ -31,7 +31,7 @@ jwt:
   expiration: 604800
 
 frontend:
-  url: http://blog.com
+  url: http://localhost:3000
 
 op:
   url: http://localhost

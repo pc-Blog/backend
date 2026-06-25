@@ -32,6 +32,12 @@ public class FriendLink {
     @Size(max = 500, message = "头像URL不能超过500个字符")
     private String avatar;
 
+    @Size(max = 500, message = "RSS链接不能超过500个字符")
+    private String rss;
+
+    @Size(max = 255, message = "邮箱不能超过255个字符")
+    private String email;
+
     @Size(max = 50, message = "主题色不能超过50个字符")
     private String themeColor;
 

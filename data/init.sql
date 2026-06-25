@@ -218,6 +218,8 @@ CREATE TABLE IF NOT EXISTS t_friend_link (
     url          VARCHAR(500)    NOT NULL,
     description  VARCHAR(255),
     avatar       VARCHAR(500),
+    rss          VARCHAR(500),
+    email        VARCHAR(255),
     theme_color  VARCHAR(50),
     sort_order   INTEGER         NOT NULL DEFAULT 0,
     is_published INTEGER         NOT NULL DEFAULT 1,
@@ -226,4 +228,6 @@ CREATE TABLE IF NOT EXISTS t_friend_link (
     update_time  TIMESTAMP
 );
 COMMENT ON TABLE  t_friend_link        IS '友情链接';
+COMMENT ON COLUMN t_friend_link.rss    IS 'RSS订阅链接';
+COMMENT ON COLUMN t_friend_link.email  IS '联系邮箱';
 COMMENT ON COLUMN t_friend_link.theme_color IS '站点主题色（用于卡片展示）';

@@ -61,6 +61,11 @@ public class AuthController {
         response.sendRedirect(frontendUrl + "/auth/callback?token=" + result.get("token"));
     }
 
+    @PostMapping("/ping")
+    public Result<String> ping() {
+        return Result.success("local_only_token");
+    }
+
     @GetMapping("/me")
     public Result<Long> me(HttpServletRequest request) {
         String header = request.getHeader("Authorization");

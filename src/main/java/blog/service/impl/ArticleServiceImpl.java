@@ -160,6 +160,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
             if (query.getCategoryId() != null) {
                 wrapper.eq(Article::getCategoryId, query.getCategoryId());
             }
+            if (query.getTagId() != null) {
+                wrapper.inSql(Article::getId, "SELECT article_id FROM t_article_tag WHERE tag_id = " + query.getTagId());
+            }
             if (query.getKeyword() != null && !query.getKeyword().isBlank()) {
                 wrapper.and(w -> w.like(Article::getTitle, query.getKeyword())
                         .or().like(Article::getSummary, query.getKeyword()));
@@ -175,13 +178,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         List<ArticleListVO> rows = page.getRecords().stream()
                 .map(this::toListVO)
                 .collect(Collectors.toList());
-
-        // tagId 筛选: 先查所有，再按标签过滤
-        if (query != null && query.getTagId() != null) {
-            rows = rows.stream()
-                    .filter(vo -> vo.getTags().stream().anyMatch(t -> t.getId().equals(query.getTagId())))
-                    .collect(Collectors.toList());
-        }
 
         return new PageVO<>(page.getTotal(), rows);
     }

@@ -36,6 +36,11 @@ public class User {
 
     private String githubId;
 
+    /** 以下三个字段用于 Worker D1 数据同步 */
+    private String githubToken;
+    private String githubRefreshToken;
+    private String githubTokenExpiresAt;
+
     @TableLogic(value = "0", delval = "1")
     private Integer deleted;
     @TableField(fill = FieldFill.INSERT)

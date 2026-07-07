@@ -37,4 +37,7 @@ op:
   url: http://host.docker.internal
   port: 8016
 
+worker:
+  api-url: https://api.lxpavilion.top
+
 

@@ -37,3 +37,6 @@ op:
   url: http://localhost
   port: 8016
 
+worker:
+  api-url: https://api.lxpavilion.top
+

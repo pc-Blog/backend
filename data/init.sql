@@ -14,19 +14,25 @@
 -- 1. 管理员用户
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_user (
-    id          BIGSERIAL       PRIMARY KEY,
-    username    VARCHAR(64)     NOT NULL UNIQUE,
-    password    VARCHAR(128)    NOT NULL,
-    nickname    VARCHAR(64),
-    avatar      VARCHAR(512),
-    email       VARCHAR(128),
-    github_id   VARCHAR(32),
-    deleted     INTEGER         NOT NULL DEFAULT 0,
-    create_time TIMESTAMP       NOT NULL DEFAULT NOW(),
-    update_time TIMESTAMP
+    id                   BIGSERIAL       PRIMARY KEY,
+    username             VARCHAR(64)     NOT NULL UNIQUE,
+    password             VARCHAR(128)    NOT NULL,
+    nickname             VARCHAR(64),
+    avatar               VARCHAR(512),
+    email                VARCHAR(128),
+    github_id            VARCHAR(32),
+    github_token         VARCHAR(512),
+    github_refresh_token VARCHAR(512),
+    github_token_expires_at VARCHAR(32),
+    deleted              INTEGER         NOT NULL DEFAULT 0,
+    create_time          TIMESTAMP       NOT NULL DEFAULT NOW(),
+    update_time          TIMESTAMP
 );
-COMMENT ON TABLE  t_user              IS '管理员用户';
-COMMENT ON COLUMN t_user.github_id    IS 'GitHub OAuth ID（用于第三方登录）';
+COMMENT ON TABLE  t_user                     IS '管理员用户';
+COMMENT ON COLUMN t_user.github_id           IS 'GitHub OAuth ID';
+COMMENT ON COLUMN t_user.github_token        IS 'GitHub OAuth access token';
+COMMENT ON COLUMN t_user.github_refresh_token IS 'GitHub OAuth refresh token';
+COMMENT ON COLUMN t_user.github_token_expires_at IS 'GitHub token 过期时间';
 
 -- ============================================
 -- 2. 统一分类（ARTICLE / PROJECT）
@@ -231,3 +237,75 @@ COMMENT ON TABLE  t_friend_link        IS '友情链接';
 COMMENT ON COLUMN t_friend_link.rss    IS 'RSS订阅链接';
 COMMENT ON COLUMN t_friend_link.email  IS '联系邮箱';
 COMMENT ON COLUMN t_friend_link.theme_color IS '站点主题色（用于卡片展示）';
+
+-- ============================================
+-- 14. 邮件归档（从 Worker D1 同步）
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_email (
+    id          BIGSERIAL    PRIMARY KEY,
+    message_id  VARCHAR(255) NOT NULL,
+    from_addr   VARCHAR(255) NOT NULL,
+    to_addr     VARCHAR(255) NOT NULL,
+    forward_to  VARCHAR(255) NOT NULL DEFAULT '',
+    subject     TEXT         NOT NULL DEFAULT '',
+    text_body   TEXT         NOT NULL DEFAULT '',
+    html_body   TEXT         NOT NULL DEFAULT '',
+    headers     TEXT         NOT NULL DEFAULT '{}',
+    created_at  TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_t_email_message_id ON t_email(message_id);
+COMMENT ON TABLE  t_email IS '邮件归档（从 Worker D1 同步）';
+
+-- ============================================
+-- 15. 邮件订阅者（从 Worker D1 同步）
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_subscriber (
+    id          BIGSERIAL    PRIMARY KEY,
+    email       VARCHAR(255) NOT NULL,
+    group_name  VARCHAR(64)  NOT NULL DEFAULT 'article',
+    created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+    UNIQUE(email, group_name)
+);
+CREATE INDEX IF NOT EXISTS idx_t_subscriber_email ON t_subscriber(email);
+COMMENT ON TABLE  t_subscriber IS '邮件订阅者（从 Worker D1 同步）';
+
+-- ============================================
+-- 16. 评论 Emoji 反应（从 Worker D1 同步）
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_comment_reaction (
+    id          BIGSERIAL    PRIMARY KEY,
+    subject_id  VARCHAR(128) NOT NULL,
+    user_id     BIGINT       NOT NULL,
+    reaction    VARCHAR(32)  NOT NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+    UNIQUE(subject_id, user_id, reaction)
+);
+COMMENT ON TABLE  t_comment_reaction IS '评论 Emoji 反应（从 Worker D1 同步）';
+
+-- ============================================
+-- 17. 评论点赞（从 Worker D1 同步）
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_comment_upvote (
+    id          BIGSERIAL    PRIMARY KEY,
+    subject_id  VARCHAR(128) NOT NULL,
+    user_id     BIGINT       NOT NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+    UNIQUE(subject_id, user_id)
+);
+COMMENT ON TABLE  t_comment_upvote IS '评论点赞（从 Worker D1 同步）';
+
+-- ============================================
+-- 18. 推送记录（从 Worker D1 同步）
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_push_log (
+    id               BIGSERIAL    PRIMARY KEY,
+    pushed_at        TIMESTAMP    NOT NULL DEFAULT NOW(),
+    article_count    INTEGER      NOT NULL DEFAULT 0,
+    subscriber_count INTEGER      NOT NULL DEFAULT 0,
+    group_name       VARCHAR(64)  NOT NULL DEFAULT 'article',
+    status           VARCHAR(32)  NOT NULL DEFAULT 'success',
+    error_msg        TEXT,
+    article_ids      TEXT         NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_t_push_log_pushed_at ON t_push_log(pushed_at);
+COMMENT ON TABLE  t_push_log IS '推送记录（从 Worker D1 同步）';

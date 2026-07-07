@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import java.util.List;
 
@@ -33,6 +34,7 @@ public class OpController {
     @RequestMapping("/article")
     public Result<PageVO<OpTag>> article() {
         log.info("获取公共文章");
+        try {
         // 获取分类
         Result<List<OpTag>> result = opClient.get()
                 .uri("/article/categories")
@@ -109,24 +111,34 @@ public class OpController {
         tags.removeIf(tag -> tag.getArticles().isEmpty());
 
         return Result.success(new PageVO<>(articles.size(), tags));
+        } catch (WebClientRequestException e) {
+            log.warn("Op 服务连接失败", e);
+            return Result.error("Op 服务未启动");
+        }
     }
 
     // 获取音乐
     @RequestMapping("/music")
     public Result<OpMusic> music() {
         log.info("获取音乐");
+        try {
         return opClient.get()
                 .uri("/music/musics/random")
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Result<OpMusic>>() {
                 })
                 .block();
+        } catch (WebClientRequestException e) {
+            log.warn("Op 服务连接失败", e);
+            return Result.error("Op 服务未启动");
+        }
     }
 
     // page音乐
     @RequestMapping("/music/page")
     public Result<PageVO<OpMusic>> musicPage() {
         log.info("获取音乐");
+        try {
         PageDTO<OpMusic> query = new PageDTO<>();
         query.setPageNum(1);
         query.setPageSize(100000);
@@ -144,6 +156,10 @@ public class OpController {
             return Result.success(new PageVO<>(block.getData().getTotal(), block.getData().getRows()));
         } else {
             return Result.error("获取音乐失败");
+        }
+        } catch (WebClientRequestException e) {
+            log.warn("Op 服务连接失败", e);
+            return Result.error("Op 服务未启动");
         }
     }
 }

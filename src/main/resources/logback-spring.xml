@@ -1,16 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 关键：必须加这一句！！！ -->
 <configuration scan="true" scanPeriod="60 seconds" debug="false">
 
-    <!-- 读取 SpringBoot 默认的颜色转换器 ← 必须加 -->
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
     <springProperty scope="context" name="appName" source="spring.application.name"/>
 
+    <!-- 业务日志 DEBUG 级别 -->
     <logger name="blog" level="DEBUG" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
+    <!-- ========== 慢 SQL 日志文件 ========== -->
+    <property name="SLOW_SQL_LOG_PATH" value="./logs/slow-sql"/>
+
+    <appender name="SLOW_SQL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${SLOW_SQL_LOG_PATH}/slow-sql.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${SLOW_SQL_LOG_PATH}/slow-sql.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 将 Druid StatFilter 慢 SQL 日志路由到独立文件 -->
+    <logger name="com.alibaba.druid.filter.stat.StatFilter" level="INFO" additivity="false">
+        <appender-ref ref="SLOW_SQL_FILE"/>
+    </logger>
+
+    <!-- ========== 控制台输出 ========== -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %clr(%-5level) %cyan(%logger{36}) - %msg%n</pattern>

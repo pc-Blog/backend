@@ -15,6 +15,67 @@ spring:
     password: ${postgresql.password:123456}
     name: blog
 
+    # ---------- Druid 连接池配置 ----------
+    druid:
+      # 连接池大小
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+
+      # 连接获取超时（毫秒）
+      max-wait: 60000
+
+      # 连接保活检测
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+
+      # 缓存 PreparedStatement
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+
+      # 连接泄漏检测（自动回收 + 定位代码）
+      remove-abandoned: true
+      remove-abandoned-timeout: 300
+      log-abandoned: true
+
+      # 监控统计 + SQL 防火墙（通过 Spring Bean 注入）
+      filter:
+        stat:
+          enabled: true
+          log-slow-sql: true
+          slow-sql-millis: 500
+          merge-sql: true
+        wall:
+          enabled: true
+          db-type: postgresql
+          config:
+            delete-where-none-check: true
+            update-where-none-check: true
+            drop-table-allow: false
+            truncate-allow: false
+            multi-statement-allow: false
+
+      # Web 访问统计
+      web-stat-filter:
+        enabled: true
+        url-pattern: /*
+        exclusions: '*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*'
+        session-stat-enable: true
+        session-stat-max-count: 1000
+
+      # Druid Monitor 控制台
+      stat-view-servlet:
+        enabled: true
+        url-pattern: /druid/*
+        reset-enable: true
+        allow: ""
+        login-username: admin
+        login-password: 123456
+
   data:
     redis:
       host: ${redis.url}

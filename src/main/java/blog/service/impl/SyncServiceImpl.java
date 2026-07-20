@@ -125,7 +125,7 @@ public class SyncServiceImpl implements SyncService {
     }
 
     private Result<Map<String, Object>> doSyncEmails(boolean overwrite) {
-        if (overwrite) emailMapper.delete(null);
+        if (overwrite) emailMapper.delete(new LambdaQueryWrapper<Email>().isNotNull(Email::getId));
         JSONArray rows = fetchWorker("emails", overwrite ? null : getLastSyncStr("emails"));
         if (rows == null) return Result.error("拉取 emails 失败");
         int saved = batchInsert(rows, row -> {
@@ -145,7 +145,7 @@ public class SyncServiceImpl implements SyncService {
     }
 
     private Result<Map<String, Object>> doSyncSubscribers(boolean overwrite) {
-        if (overwrite) subscriberMapper.delete(null);
+        if (overwrite) subscriberMapper.delete(new LambdaQueryWrapper<Subscriber>().isNotNull(Subscriber::getId));
         JSONArray rows = fetchWorker("subscribers", overwrite ? null : getLastSyncStr("subscribers"));
         if (rows == null) return Result.error("拉取 subscribers 失败");
         int saved = batchInsert(rows, row -> {
@@ -159,7 +159,7 @@ public class SyncServiceImpl implements SyncService {
     }
 
     private Result<Map<String, Object>> doSyncReactions(boolean overwrite) {
-        if (overwrite) commentReactionMapper.delete(null);
+        if (overwrite) commentReactionMapper.delete(new LambdaQueryWrapper<CommentReaction>().isNotNull(CommentReaction::getId));
         JSONArray rows = fetchWorker("reactions", overwrite ? null : getLastSyncStr("reactions"));
         if (rows == null) return Result.error("拉取 reactions 失败");
         int saved = batchInsert(rows, row -> {
@@ -174,7 +174,7 @@ public class SyncServiceImpl implements SyncService {
     }
 
     private Result<Map<String, Object>> doSyncUpvotes(boolean overwrite) {
-        if (overwrite) commentUpvoteMapper.delete(null);
+        if (overwrite) commentUpvoteMapper.delete(new LambdaQueryWrapper<CommentUpvote>().isNotNull(CommentUpvote::getId));
         JSONArray rows = fetchWorker("upvotes", overwrite ? null : getLastSyncStr("upvotes"));
         if (rows == null) return Result.error("拉取 upvotes 失败");
         int saved = batchInsert(rows, row -> {
@@ -188,7 +188,7 @@ public class SyncServiceImpl implements SyncService {
     }
 
     private Result<Map<String, Object>> doSyncPushLogs(boolean overwrite) {
-        if (overwrite) pushLogMapper.delete(null);
+        if (overwrite) pushLogMapper.delete(new LambdaQueryWrapper<PushLog>().isNotNull(PushLog::getId));
         JSONArray rows = fetchWorker("push-logs", overwrite ? null : getLastSyncStr("push-logs"));
         if (rows == null) return Result.error("拉取 push-logs 失败");
         int saved = batchInsert(rows, row -> {
@@ -206,7 +206,7 @@ public class SyncServiceImpl implements SyncService {
     }
 
     private Result<Map<String, Object>> doSyncUsers(boolean overwrite) {
-        if (overwrite) userMapper.deleteAllPhysically();
+        if (overwrite) userMapper.delete(new LambdaQueryWrapper<User>().isNotNull(User::getId));
         JSONArray rows = fetchWorker("users", overwrite ? null : getLastSyncStr("users"));
         if (rows == null) return Result.error("拉取 users 失败");
         int saved = 0;
@@ -222,10 +222,10 @@ public class SyncServiceImpl implements SyncService {
                 u.setNickname(row.getString("nickname"));
                 u.setAvatar(row.getString("avatar"));
                 u.setGithubId(row.getString("github_id"));
-                u.setDeleted(row.getInteger("deleted"));
                 u.setGithubToken(row.getString("github_token"));
                 u.setGithubRefreshToken(row.getString("github_refresh_token"));
                 u.setGithubTokenExpiresAt(row.getString("github_token_expires_at"));
+                u.setEmail(row.getString("email"));
                 u.setCreateTime(parseTime(row.getString("create_time")));
                 u.setUpdateTime(parseTime(row.getString("update_time")));
                 userMapper.insert(u);

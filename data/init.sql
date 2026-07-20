@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS t_user (
     github_token         VARCHAR(512),
     github_refresh_token VARCHAR(512),
     github_token_expires_at VARCHAR(32),
-    deleted              INTEGER         NOT NULL DEFAULT 0,
     create_time          TIMESTAMP       NOT NULL DEFAULT NOW(),
     update_time          TIMESTAMP
 );

@@ -44,7 +44,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public PageVO<User> page(PageDTO<User> dto) {
-        var wrapper = new LambdaQueryWrapper<User>().eq(User::getDeleted, 0);
+        var wrapper = new LambdaQueryWrapper<User>();
         User query = dto.getQuery();
         if (query != null && query.getUsername() != null && !query.getUsername().isBlank())
             wrapper.like(User::getUsername, query.getUsername());
@@ -77,7 +77,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public Map<String, Object> login(String username, String password) {
         User user = getOne(new LambdaQueryWrapper<User>()
                 .eq(User::getUsername, username)
-                .eq(User::getDeleted, 0));
+                );
         if (user == null || !BCrypt.checkpw(password, user.getPassword())) {
             throw new BaseException("用户名或密码错误");
         }
@@ -129,7 +129,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             // 3. find or create user
             User user = getOne(new LambdaQueryWrapper<User>()
                     .eq(User::getGithubId, ghId)
-                    .eq(User::getDeleted, 0));
+                    );
             if (user == null) {
                 user = new User();
                 user.setUsername("gh_" + ghLogin);
@@ -193,7 +193,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private void checkUsernameUnique(String username, Long excludeId) {
         var wrapper = new LambdaQueryWrapper<User>()
                 .eq(User::getUsername, username)
-                .eq(User::getDeleted, 0);
+                ;
         if (excludeId != null) {
             wrapper.ne(User::getId, excludeId);
         }

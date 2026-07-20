@@ -29,7 +29,7 @@ public class Bookmark {
     @Size(max = 255, message = "描述不能超过255个字符")
     private String description;
 
-    @Size(max = 50, message = "图标不能超过50个字符")
+    @Size(max = 500, message = "图标链接不能超过500个字符")
     private String icon;
 
     private Long categoryId;

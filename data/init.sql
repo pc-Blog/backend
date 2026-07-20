@@ -540,7 +540,7 @@ CREATE TABLE IF NOT EXISTS t_bookmark (
     name         VARCHAR(100)    NOT NULL,
     url          VARCHAR(500)    NOT NULL,
     description  VARCHAR(255),
-    icon         VARCHAR(50)     DEFAULT '🔗',
+    icon         VARCHAR(500)    DEFAULT '🔗',
     category_id  BIGINT,
     is_pin       INTEGER         NOT NULL DEFAULT 0,
     sort_order   INTEGER         NOT NULL DEFAULT 0,

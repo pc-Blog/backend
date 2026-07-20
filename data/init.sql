@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS t_article (
     summary      VARCHAR(512),
     content      TEXT           NOT NULL,
     cover_image  VARCHAR(512),
-    category_id  BIGINT         REFERENCES t_category(id),
+    category_id  BIGINT,
     is_pinned    INTEGER        NOT NULL DEFAULT 0,
     is_published INTEGER        NOT NULL DEFAULT 1,
     view_count   BIGINT         NOT NULL DEFAULT 0,
@@ -120,8 +120,8 @@ COMMENT ON COLUMN t_article.update_time IS '更新时间';
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_article_tag (
     id          BIGSERIAL       PRIMARY KEY,
-    article_id  BIGINT          NOT NULL REFERENCES t_article(id) ON DELETE CASCADE,
-    tag_id      BIGINT          NOT NULL REFERENCES t_tag(id) ON DELETE CASCADE,
+    article_id  BIGINT          NOT NULL,
+    tag_id      BIGINT          NOT NULL,
     UNIQUE(article_id, tag_id)
 );
 CREATE INDEX IF NOT EXISTS idx_article_tag_article ON t_article_tag(article_id);
@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS t_project (
     summary      VARCHAR(512),
     content      TEXT,
     cover_image  VARCHAR(512),
-    category_id  BIGINT         REFERENCES t_category(id),
+    category_id  BIGINT,
     github_url   VARCHAR(512),
     demo_url     VARCHAR(512),
     sort_order   INTEGER        NOT NULL DEFAULT 0,
@@ -187,8 +187,8 @@ COMMENT ON COLUMN t_technology.update_time IS '更新时间';
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_project_tech (
     id          BIGSERIAL       PRIMARY KEY,
-    project_id  BIGINT          NOT NULL REFERENCES t_project(id),
-    tech_id     BIGINT          NOT NULL REFERENCES t_technology(id),
+    project_id  BIGINT          NOT NULL,
+    tech_id     BIGINT          NOT NULL,
     UNIQUE(project_id, tech_id)
 );
 COMMENT ON TABLE  t_project_tech           IS '项目-技术关联表（多对多）';
@@ -264,37 +264,7 @@ COMMENT ON COLUMN t_about.create_time  IS '创建时间';
 COMMENT ON COLUMN t_about.update_time  IS '更新时间';
 
 -- ============================================
--- 12. 访客评论
--- ============================================
-CREATE TABLE IF NOT EXISTS t_comment (
-    id           BIGSERIAL      PRIMARY KEY,
-    article_id   BIGINT         NOT NULL REFERENCES t_article(id) ON DELETE CASCADE,
-    author_name  VARCHAR(64)    NOT NULL,
-    author_email VARCHAR(128),
-    content      TEXT           NOT NULL,
-    user_id      BIGINT,
-    user_agent   VARCHAR(512),
-    ip_address   VARCHAR(64),
-    deleted      INTEGER        NOT NULL DEFAULT 0,
-    create_time  TIMESTAMP      NOT NULL DEFAULT NOW(),
-    update_time  TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS idx_comment_article ON t_comment(article_id, deleted);
-COMMENT ON TABLE  t_comment            IS '文章评论';
-COMMENT ON COLUMN t_comment.id         IS '主键ID';
-COMMENT ON COLUMN t_comment.article_id IS '关联文章ID';
-COMMENT ON COLUMN t_comment.author_name IS '评论者昵称';
-COMMENT ON COLUMN t_comment.author_email IS '评论者邮箱';
-COMMENT ON COLUMN t_comment.content    IS '评论内容';
-COMMENT ON COLUMN t_comment.user_id    IS '登录用户ID（游客为NULL）';
-COMMENT ON COLUMN t_comment.user_agent IS '用户浏览器UA';
-COMMENT ON COLUMN t_comment.ip_address IS '评论者IP地址';
-COMMENT ON COLUMN t_comment.deleted    IS '逻辑删除：0=正常 1=删除';
-COMMENT ON COLUMN t_comment.create_time IS '创建时间';
-COMMENT ON COLUMN t_comment.update_time IS '更新时间';
-
--- ============================================
--- 13. 上传媒体文件
+-- 12. 上传媒体文件
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_media (
     id                BIGSERIAL   PRIMARY KEY,
@@ -323,7 +293,7 @@ COMMENT ON COLUMN t_media.create_time  IS '创建时间';
 COMMENT ON COLUMN t_media.update_time  IS '更新时间';
 
 -- ============================================
--- 14. 相册
+-- 13. 相册
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_album (
     id           BIGSERIAL       PRIMARY KEY,
@@ -346,11 +316,11 @@ COMMENT ON COLUMN t_album.create_time   IS '创建时间';
 COMMENT ON COLUMN t_album.update_time   IS '更新时间';
 
 -- ============================================
--- 15. 相片（一对多）
+-- 14. 相片（一对多）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_photo (
     id          BIGSERIAL       PRIMARY KEY,
-    album_id    BIGINT          NOT NULL REFERENCES t_album(id),
+    album_id    BIGINT          NOT NULL,
     url         VARCHAR(500)    NOT NULL,
     sort_order  INTEGER         DEFAULT 0,
     deleted     SMALLINT        DEFAULT 0,
@@ -368,7 +338,7 @@ COMMENT ON COLUMN t_photo.create_time   IS '创建时间';
 COMMENT ON COLUMN t_photo.update_time   IS '更新时间';
 
 -- ============================================
--- 16. 说说/动态
+-- 15. 说说/动态
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_chatter (
     id           BIGSERIAL    PRIMARY KEY,
@@ -389,11 +359,11 @@ COMMENT ON COLUMN t_chatter.create_time IS '创建时间';
 COMMENT ON COLUMN t_chatter.update_time IS '更新时间';
 
 -- ============================================
--- 17. 说说图片（一对多）
+-- 16. 说说图片（一对多）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_chatter_image (
     id          BIGSERIAL       PRIMARY KEY,
-    chatter_id  BIGINT          NOT NULL REFERENCES t_chatter(id),
+    chatter_id  BIGINT          NOT NULL,
     url         VARCHAR(500)    NOT NULL,
     sort_order  INTEGER         DEFAULT 0
 );
@@ -405,7 +375,7 @@ COMMENT ON COLUMN t_chatter_image.url     IS '图片URL';
 COMMENT ON COLUMN t_chatter_image.sort_order IS '排序值，越小越靠前';
 
 -- ============================================
--- 18. 友情链接
+-- 17. 友情链接
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_friend_link (
     id           BIGSERIAL       PRIMARY KEY,
@@ -438,7 +408,7 @@ COMMENT ON COLUMN t_friend_link.create_time IS '创建时间';
 COMMENT ON COLUMN t_friend_link.update_time IS '更新时间';
 
 -- ============================================
--- 19. 邮件归档（从 Worker D1 同步）
+-- 18. 邮件归档（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_email (
     id          BIGSERIAL    PRIMARY KEY,
@@ -466,7 +436,7 @@ COMMENT ON COLUMN t_email.headers IS '邮件头（JSON）';
 COMMENT ON COLUMN t_email.created_at IS '接收时间';
 
 -- ============================================
--- 20. 邮件订阅者（从 Worker D1 同步）
+-- 19. 邮件订阅者（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_subscriber (
     id          BIGSERIAL    PRIMARY KEY,
@@ -483,7 +453,7 @@ COMMENT ON COLUMN t_subscriber.group_name IS '订阅分组（article/hot）';
 COMMENT ON COLUMN t_subscriber.created_at IS '订阅时间';
 
 -- ============================================
--- 21. 评论 Emoji 反应（从 Worker D1 同步）
+-- 20. 评论 Emoji 反应（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_comment_reaction (
     id          BIGSERIAL    PRIMARY KEY,
@@ -501,7 +471,7 @@ COMMENT ON COLUMN t_comment_reaction.reaction IS 'Emoji 反应类型';
 COMMENT ON COLUMN t_comment_reaction.created_at IS '创建时间';
 
 -- ============================================
--- 22. 评论点赞（从 Worker D1 同步）
+-- 21. 评论点赞（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_comment_upvote (
     id          BIGSERIAL    PRIMARY KEY,
@@ -517,7 +487,7 @@ COMMENT ON COLUMN t_comment_upvote.user_id IS '用户ID';
 COMMENT ON COLUMN t_comment_upvote.created_at IS '创建时间';
 
 -- ============================================
--- 23. 推送记录（从 Worker D1 同步）
+-- 22. 推送记录（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_push_log (
     id               BIGSERIAL    PRIMARY KEY,
@@ -541,12 +511,12 @@ COMMENT ON COLUMN t_push_log.error_msg IS '错误信息';
 COMMENT ON COLUMN t_push_log.article_ids IS '推送文章ID列表';
 
 -- ============================================
--- 24. 收藏分类
+-- 23. 收藏分类
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_bookmark_category (
     id          BIGSERIAL       PRIMARY KEY,
     name        VARCHAR(64)     NOT NULL,
-    parent_id   BIGINT          REFERENCES t_bookmark_category(id),
+    parent_id   BIGINT,
     sort_order  INTEGER         NOT NULL DEFAULT 0,
     deleted     INTEGER         NOT NULL DEFAULT 0,
     create_time TIMESTAMP       NOT NULL DEFAULT NOW(),
@@ -563,7 +533,7 @@ COMMENT ON COLUMN t_bookmark_category.create_time IS '创建时间';
 COMMENT ON COLUMN t_bookmark_category.update_time IS '更新时间';
 
 -- ============================================
--- 25. 收藏网站
+-- 24. 收藏网站
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_bookmark (
     id           BIGSERIAL       PRIMARY KEY,
@@ -571,7 +541,7 @@ CREATE TABLE IF NOT EXISTS t_bookmark (
     url          VARCHAR(500)    NOT NULL,
     description  VARCHAR(255),
     icon         VARCHAR(50)     DEFAULT '🔗',
-    category_id  BIGINT          REFERENCES t_bookmark_category(id),
+    category_id  BIGINT,
     is_pin       INTEGER         NOT NULL DEFAULT 0,
     sort_order   INTEGER         NOT NULL DEFAULT 0,
     deleted      INTEGER         NOT NULL DEFAULT 0,

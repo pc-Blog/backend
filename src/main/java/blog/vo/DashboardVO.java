@@ -2,7 +2,6 @@ package blog.vo;
 
 import lombok.Data;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -11,10 +10,8 @@ public class DashboardVO {
     private long projectCount;
     private long skillCount;
     private long timelineCount;
-    private long commentCount;
     private long totalViews;
     private List<TopArticle> topArticles;
-    private List<LatestComment> latestComments;
 
     @Data
     public static class TopArticle {
@@ -29,18 +26,4 @@ public class DashboardVO {
         }
     }
 
-    @Data
-    public static class LatestComment {
-        private Long id;
-        private String authorName;
-        private String content;
-        private LocalDateTime createTime;
-
-        public LatestComment(Long id, String authorName, String content, LocalDateTime createTime) {
-            this.id = id;
-            this.authorName = authorName;
-            this.content = content;
-            this.createTime = createTime;
-        }
-    }
 }

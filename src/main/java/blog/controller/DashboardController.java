@@ -2,12 +2,10 @@ package blog.controller;
 
 import blog.common.Result;
 import blog.entity.Article;
-import blog.entity.Comment;
 import blog.entity.Project;
 import blog.entity.Skill;
 import blog.entity.Timeline;
 import blog.mapper.ArticleMapper;
-import blog.mapper.CommentMapper;
 import blog.mapper.ProjectMapper;
 import blog.mapper.SkillMapper;
 import blog.mapper.TimelineMapper;
@@ -30,16 +28,13 @@ public class DashboardController {
     private final ProjectMapper projectMapper;
     private final SkillMapper skillMapper;
     private final TimelineMapper timelineMapper;
-    private final CommentMapper commentMapper;
 
     public DashboardController(ArticleMapper articleMapper, ProjectMapper projectMapper,
-                               SkillMapper skillMapper, TimelineMapper timelineMapper,
-                               CommentMapper commentMapper) {
+                               SkillMapper skillMapper, TimelineMapper timelineMapper) {
         this.articleMapper = articleMapper;
         this.projectMapper = projectMapper;
         this.skillMapper = skillMapper;
         this.timelineMapper = timelineMapper;
-        this.commentMapper = commentMapper;
     }
 
     @GetMapping("/dashboard")
@@ -55,8 +50,6 @@ public class DashboardController {
                 new LambdaQueryWrapper<Skill>().eq(Skill::getDeleted, 0)));
         vo.setTimelineCount(timelineMapper.selectCount(
                 new LambdaQueryWrapper<Timeline>().eq(Timeline::getDeleted, 0)));
-        vo.setCommentCount(commentMapper.selectCount(
-                new LambdaQueryWrapper<Comment>().eq(Comment::getDeleted, 0)));
 
         // 总阅读量
         Long sum = articleMapper.selectObjs(
@@ -71,15 +64,6 @@ public class DashboardController {
                         .orderByDesc(Article::getViewCount).last("LIMIT 5"));
         vo.setTopArticles(topArticles.stream()
                 .map(a -> new DashboardVO.TopArticle(a.getId(), a.getTitle(), a.getViewCount()))
-                .collect(Collectors.toList()));
-
-        // 最新5条评论
-        List<Comment> latestComments = commentMapper.selectList(
-                new LambdaQueryWrapper<Comment>()
-                        .eq(Comment::getDeleted, 0)
-                        .orderByDesc(Comment::getCreateTime).last("LIMIT 5"));
-        vo.setLatestComments(latestComments.stream()
-                .map(c -> new DashboardVO.LatestComment(c.getId(), c.getAuthorName(), c.getContent(), c.getCreateTime()))
                 .collect(Collectors.toList()));
 
         return Result.success(vo);

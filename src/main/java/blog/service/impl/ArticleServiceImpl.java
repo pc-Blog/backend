@@ -30,14 +30,12 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     private final ArticleTagMapper articleTagMapper;
     private final CategoryMapper categoryMapper;
     private final TagMapper tagMapper;
-    private final CommentMapper commentMapper;
 
     public ArticleServiceImpl(ArticleTagMapper articleTagMapper, CategoryMapper categoryMapper,
-                              TagMapper tagMapper, CommentMapper commentMapper) {
+                              TagMapper tagMapper) {
         this.articleTagMapper = articleTagMapper;
         this.categoryMapper = categoryMapper;
         this.tagMapper = tagMapper;
-        this.commentMapper = commentMapper;
     }
 
     // ==================== 管理端 ====================
@@ -261,12 +259,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
             vo.setTags(new ArrayList<>());
         }
 
-        // 评论数
-        Long commentCount = commentMapper.selectCount(
-                new LambdaQueryWrapper<Comment>()
-                        .eq(Comment::getArticleId, article.getId())
-                        .eq(Comment::getDeleted, 0));
-        vo.setCommentCount(commentCount);
     }
 
     // ==================== 校验 ====================

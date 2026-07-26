@@ -1,5 +1,6 @@
 package blog.controller;
 
+import blog.common.GroupedPageVO;
 import blog.common.PageDTO;
 import blog.common.PageVO;
 import blog.common.Result;
@@ -9,11 +10,15 @@ import blog.entity.Article;
 import blog.service.ArticleService;
 import blog.vo.ArticleDetailVO;
 import blog.vo.ArticleListVO;
+import blog.vo.GroupedItemVO;
+import blog.vo.SeriesBriefVO;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -34,6 +39,12 @@ public class ArticleController {
         return Result.success(articleService.publicPage(dto.getPageNum(), dto.getPageSize(), dto.getQuery()));
     }
 
+    @PostMapping("/public/grouped-page")
+    public Result<GroupedPageVO<GroupedItemVO>> publicGroupedPage(@RequestBody PageDTO<ArticleQueryDTO> dto) {
+        log.info("访客端聚合分页查询文章:{}", JSON.toJSONString(dto, SerializerFeature.PrettyFormat));
+        return Result.success(articleService.groupedPage(dto.getPageNum(), dto.getPageSize(), dto.getQuery()));
+    }
+
     @GetMapping("/public/{id}")
     public Result<ArticleDetailVO> publicDetail(@PathVariable Long id) {
         log.info("访客端查看文章详情, id:{}", id);
@@ -49,6 +60,12 @@ public class ArticleController {
     }
 
     // ==================== 管理端 ====================
+
+    @GetMapping("/series/list")
+    public Result<List<SeriesBriefVO>> seriesList() {
+        log.info("管理端获取系列列表");
+        return Result.success(articleService.getAdminSeriesList());
+    }
 
     @GetMapping("/{id}")
     public Result<ArticleDetailVO> getById(@PathVariable Long id) {

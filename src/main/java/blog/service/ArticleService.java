@@ -1,11 +1,14 @@
 package blog.service;
 
+import blog.common.GroupedPageVO;
 import blog.common.PageDTO;
 import blog.common.PageVO;
 import blog.dto.ArticleQueryDTO;
 import blog.entity.Article;
 import blog.vo.ArticleDetailVO;
 import blog.vo.ArticleListVO;
+import blog.vo.GroupedItemVO;
+import blog.vo.SeriesBriefVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
@@ -19,6 +22,8 @@ public interface ArticleService extends IService<Article> {
 
     PageVO<ArticleListVO> publicPage(int pageNum, int pageSize, ArticleQueryDTO query);
 
+    GroupedPageVO<GroupedItemVO> groupedPage(int pageNum, int pageSize, ArticleQueryDTO query);
+
     ArticleDetailVO publicDetail(Long id);
 
     ArticleDetailVO adminDetail(Long id);
@@ -30,4 +35,6 @@ public interface ArticleService extends IService<Article> {
     void unpublish(Long id);
 
     void togglePin(Long id);
+
+    List<SeriesBriefVO> getAdminSeriesList();
 }

@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS t_article (
     is_pinned    INTEGER        NOT NULL DEFAULT 0,
     is_published INTEGER        NOT NULL DEFAULT 1,
     view_count   BIGINT         NOT NULL DEFAULT 0,
+    series       VARCHAR(128),
     created_at   TIMESTAMP,
     deleted      INTEGER        NOT NULL DEFAULT 0,
     create_time  TIMESTAMP      NOT NULL DEFAULT NOW(),

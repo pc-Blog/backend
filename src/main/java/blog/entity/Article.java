@@ -37,6 +37,7 @@ public class Article {
     private Integer isPinned;
     private Integer isPublished;
     private Long viewCount;
+    private String series;
     private LocalDateTime createdAt;
 
     @TableLogic(value = "0", delval = "1")

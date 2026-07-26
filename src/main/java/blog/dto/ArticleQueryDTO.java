@@ -7,5 +7,6 @@ public class ArticleQueryDTO {
     private Long categoryId;
     private Long tagId;
     private String keyword;
+    private String series;
     private Boolean isPublished;
 }

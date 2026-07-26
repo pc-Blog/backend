@@ -1,5 +1,6 @@
 package blog.service.impl;
 
+import blog.common.GroupedPageVO;
 import blog.common.PageDTO;
 import blog.common.PageVO;
 import blog.dto.ArticleQueryDTO;
@@ -12,6 +13,8 @@ import blog.vo.ArticleDetailVO;
 import blog.vo.ArticleListVO;
 import blog.vo.ArticlePrevNextVO;
 import blog.vo.ArticleTagVO;
+import blog.vo.GroupedItemVO;
+import blog.vo.SeriesBriefVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -20,8 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -146,6 +148,94 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         baseMapper.incrementViewCount(id);
     }
 
+    @Override
+    public List<SeriesBriefVO> getAdminSeriesList() {
+        var wrapper = new LambdaQueryWrapper<Article>()
+                .eq(Article::getDeleted, 0)
+                .eq(Article::getIsPublished, 1)
+                .isNotNull(Article::getSeries)
+                .ne(Article::getSeries, "")
+                .orderByDesc(Article::getCreateTime);
+        List<Article> all = list(wrapper);
+
+        // 按系列分组，每系列取最新文章的封面
+        return all.stream()
+                .collect(Collectors.groupingBy(Article::getSeries,
+                        Collectors.collectingAndThen(Collectors.toList(), list -> list.get(0))))
+                .entrySet().stream()
+                .map(entry -> {
+                    SeriesBriefVO vo = new SeriesBriefVO();
+                    vo.setSeries(entry.getKey());
+                    vo.setCoverImage(entry.getValue().getCoverImage());
+                    return vo;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public GroupedPageVO<GroupedItemVO> groupedPage(int pageNum, int pageSize, ArticleQueryDTO query) {
+        // 1. 查询所有符合条件的文章（无分页）
+        var wrapper = new LambdaQueryWrapper<Article>()
+                .eq(Article::getDeleted, 0)
+                .eq(Article::getIsPublished, 1);
+
+        if (query != null) {
+            if (query.getCategoryId() != null) {
+                wrapper.eq(Article::getCategoryId, query.getCategoryId());
+            }
+            if (query.getTagId() != null) {
+                wrapper.inSql(Article::getId, "SELECT article_id FROM t_article_tag WHERE tag_id = " + query.getTagId());
+            }
+            if (query.getKeyword() != null && !query.getKeyword().isBlank()) {
+                wrapper.and(w -> w.like(Article::getTitle, query.getKeyword())
+                        .or().like(Article::getSummary, query.getKeyword()));
+            }
+            if (query.getSeries() != null && !query.getSeries().isBlank()) {
+                wrapper.eq(Article::getSeries, query.getSeries());
+            }
+        }
+
+        wrapper.orderByDesc(Article::getIsPinned).orderByDesc(Article::getCreatedAt);
+
+        List<Article> all = list(wrapper);
+        List<ArticleListVO> allVOs = all.stream().map(this::toListVO).collect(Collectors.toList());
+
+        // 2. 构建展示列表（series 聚合，保持原始排序）
+        Map<String, List<ArticleListVO>> seriesMap = new LinkedHashMap<>();
+        Set<String> insertedSeries = new HashSet<>();
+        List<Object> slots = new ArrayList<>();
+
+        for (ArticleListVO a : allVOs) {
+            if (a.getSeries() != null && !a.getSeries().isBlank()) {
+                seriesMap.computeIfAbsent(a.getSeries(), k -> new ArrayList<>()).add(a);
+                if (!insertedSeries.contains(a.getSeries())) {
+                    insertedSeries.add(a.getSeries());
+                    slots.add(a.getSeries());
+                }
+            } else {
+                slots.add(a);
+            }
+        }
+
+        List<GroupedItemVO> displayList = new ArrayList<>();
+        for (Object slot : slots) {
+            if (slot instanceof ArticleListVO article) {
+                displayList.add(GroupedItemVO.article(article));
+            } else if (slot instanceof String seriesName) {
+                displayList.add(GroupedItemVO.series(seriesName, seriesMap.get(seriesName)));
+            }
+        }
+
+        // 3. 对展示列表分页
+        int displayTotal = displayList.size();
+        int articleTotal = allVOs.size();
+        int from = (pageNum - 1) * pageSize;
+        int to = Math.min(from + pageSize, displayTotal);
+        List<GroupedItemVO> pageRows = from < displayTotal ? displayList.subList(from, to) : Collections.emptyList();
+
+        return new GroupedPageVO<>(displayTotal, articleTotal, pageRows);
+    }
+
     // ==================== 访客端 ====================
 
     @Override
@@ -164,6 +254,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
             if (query.getKeyword() != null && !query.getKeyword().isBlank()) {
                 wrapper.and(w -> w.like(Article::getTitle, query.getKeyword())
                         .or().like(Article::getSummary, query.getKeyword()));
+            }
+            if (query.getSeries() != null && !query.getSeries().isBlank()) {
+                wrapper.eq(Article::getSeries, query.getSeries());
             }
         }
 
@@ -240,6 +333,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         vo.setIsPinned(article.getIsPinned());
         vo.setIsPublished(article.getIsPublished());
         vo.setViewCount(article.getViewCount());
+        vo.setSeries(article.getSeries());
         vo.setCreatedAt(article.getCreatedAt());
         vo.setUpdateTime(article.getUpdateTime());
 

@@ -17,6 +17,7 @@ public class ArticleListVO {
     private Integer isPinned;
     private Integer isPublished;
     private Long viewCount;
+    private String series;
     private LocalDateTime createdAt;
     private LocalDateTime updateTime;
 }

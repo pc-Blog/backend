@@ -30,6 +30,9 @@ public class SyncServiceImpl implements SyncService {
     @Value("${worker.api-url}")
     private String workerApiUrl;
 
+    @Value("${worker.admin-token}")
+    private String workerAdminToken;
+
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(15)).build();
 
@@ -246,7 +249,9 @@ public class SyncServiceImpl implements SyncService {
             String url = workerApiUrl + "/api/sync/" + endpoint;
             if (since != null) url += "?since=" + URLEncoder.encode(since, StandardCharsets.UTF_8);
             HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(url)).timeout(Duration.ofSeconds(30)).GET().build();
+                    .uri(URI.create(url)).timeout(Duration.ofSeconds(30))
+                    .header("Authorization", "Bearer " + workerAdminToken)
+                    .GET().build();
             HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() != 200) return null;
             JSONObject json = JSON.parseObject(resp.body());

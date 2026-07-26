@@ -18,23 +18,22 @@
 | 文件存储 | MinIO 8.5.2 |
 | 安全 | Spring Security + JWT (jjwt 0.12.6) + BCrypt |
 | 工具 | Lombok、FastJSON 2.51、SimpleMagic |
-| 部署 | Maven 3.9+ → WAR 包 → Tomcat 10 |
+| 部署 | Docker（多阶段构建，镜像 ~195MB） |
 
 ---
 
 ## 前置要求
 
-| 依赖 | 版本要求 | 说明 |
-|------|---------|------|
-| JDK | >= 21 | 必需 |
-| Maven | >= 3.9 | 构建工具 |
-| PostgreSQL | 16+ | 数据库 |
-| Redis | 7+ | 缓存 |
-| MinIO | 8.5.2+ | 对象存储（图片/文件） |
+| 依赖 | 版本要求 |
+|------|---------|
+| Docker | 24+ |
+| Docker Compose | 2.20+ |
+
+> 本地开发还需要 JDK 21 和 Maven 3.9+
 
 ---
 
-## 快速启动
+## 快速启动（Docker 推荐）
 
 ### 1. 克隆项目
 
@@ -43,59 +42,42 @@ git clone https://github.com/pc-Blog/springBoot.git
 cd Blog
 ```
 
-### 2. 初始化数据库
+### 2. 配置参数
+
+编辑 `src/main/resources/args.yaml`，按实际环境修改数据库、Redis、MinIO 等配置。
+
+> Docker 环境下数据库等组件走容器内网，服务名即容器名（如 `bg-postgres`）。本地开发使用 `args-dev.yaml`。
+
+### 3. 构建并启动
 
 ```bash
-psql -U postgres -c "CREATE DATABASE blog;"
-psql -U postgres -d blog -f data/init.sql
-```
+# 构建镜像
+docker build -t bg-api:latest .
 
-### 3. 配置参数
-
-配置文件位于 `src/main/resources/args.yaml`，按实际环境修改：
-
-```yaml
-postgresql:
-  url: "localhost"      # 数据库地址
-  port: 5432            # 数据库端口
-  username: postgres    # 数据库用户名
-  password: 123456      # 数据库密码
-
-redis:
-  url: "localhost"      # Redis 地址
-  port: 6379            # Redis 端口
-  password: 123456      # Redis 密码
-
-minio:
-  clientPoint: http://localhost:19090  # MinIO 访问地址
-  accessKey: minioadmin                # MinIO 密钥
-  secretKey: minioadmin
-  bucket: blog                         # 存储桶名称
-
-internet:
-  PORT: 8080           # 服务端口
-
-jwt:
-  secret: 【必填】JWT 签名密钥（从 git 历史清理，请轮换后回填）  # JWT 密钥（生产环境请修改）
-  expiration: 604800   # Token 过期时间（秒，默认 7 天）
-```
-
-> **注意**：`args.yaml` 供 Docker 环境使用（数据库等走容器内网），本地开发使用 `args-dev.yaml`，其中所有地址默认指向 `localhost`。
-
-### 4. 构建并启动
-
-```bash
-# 打包 WAR
-mvn clean package -DskipTests
-
-# 直接启动（内嵌 Tomcat）
-java -jar target/ROOT.war
-
-# 或部署到外置 Tomcat（推荐生产）
-# 将 target/ROOT.war 复制到 Tomcat webapps 目录
+# 启动所有服务（PostgreSQL、Redis、MinIO、Nginx、前端）
+docker compose -f docker-compose.yml up -d
 ```
 
 启动后访问：`http://localhost:8080`
+
+> **首次部署后**：PostgreSQL 需执行建表脚本（`docker exec -i bg-postgres psql -U postgres -d blog < data/init.sql`），MinIO 需在控制台 `http://localhost:19000` 创建 `blog` 存储桶。
+
+---
+
+## 本地开发（传统 Maven）
+
+```bash
+# 使用本地开发配置
+cp src/main/resources/args-dev.yaml src/main/resources/application.yaml
+
+# 编译
+mvn clean package -DskipTests -s .mvn/settings.xml
+
+# 启动
+java -jar target/ROOT.jar
+```
+
+> `.mvn/settings.xml` 配置了阿里云 Maven 镜像加速国内下载。
 
 ---
 
@@ -107,23 +89,26 @@ Blog/
 │   ├── java/blog/
 │   │   ├── common/          # 通用工具类、统一响应体（PageDTO、PageVO、Result）
 │   │   ├── config/          # Spring 配置（Security、CORS、MinIO、Jackson、MyBatis-Plus）
-│   │   ├── controller/      # RESTful API 控制器（17 个）
+│   │   ├── controller/      # RESTful API 控制器
 │   │   ├── dto/             # 数据传输对象
-│   │   ├── entity/          # MyBatis-Plus 实体类（17 张表）
+│   │   ├── entity/          # MyBatis-Plus 实体类
 │   │   ├── exception/       # 全局异常处理
 │   │   ├── mapper/          # MyBatis-Plus Mapper 接口
 │   │   ├── service/         # 业务接口 + impl 实现
 │   │   ├── util/            # 工具类（JWT、MinIO、分页）
-│   │   └── vo/              # 视图对象（文章/项目详情、列表等）
+│   │   └── vo/              # 视图对象
 │   └── resources/
-│       ├── application.yaml           # 主配置
 │       ├── args.yaml                  # Docker 环境参数
 │       ├── args-dev.yaml              # 本地开发参数
 │       └── logback-spring.xml         # 日志配置
 ├── data/
-│   ├── init.sql                       # 统一建表脚本（17 张表）
+│   ├── init.sql                       # 建表脚本
 │   └── migration/                     # 增量迁移脚本
-├── pom.xml                            # Maven 依赖配置
+├── .mvn/settings.xml                  # Maven 镜像配置（阿里云加速）
+├── Dockerfile                         # 多阶段构建
+├── docker-compose.yml                 # 服务编排
+├── .dockerignore
+├── pom.xml
 └── README.md
 ```
 
@@ -151,20 +136,35 @@ Blog/
 | 仪表盘 | `/api/dashboard` | 站点概览数据 |
 | 文学 | `/api/op/**` | 文学创作 |
 | 用户 | `/api/user/**` | 用户管理 |
+| 数据同步 | `/api/sync/**` | Worker 数据备份（需 ADMIN_TOKEN） |
 
 ---
 
 ## 部署架构
 
-生产环境通过 Docker Compose 统一编排（与前端共用）：
-
 ```
 nginx:80       → 反向代理
-  ├→ next:3000      前端（Next.js）
-  └→ tomcat:18016   后端（本项目的 WAR 包）
-redis:6379          缓存
-postgres:5432       数据库
+  ├→ bg-blog:3000       前端（Next.js）
+  └→ bg-api:8080         后端（本服务）
+bg-redis:6379            缓存
+bg-postgres:5432         数据库
+bg-minio:9000/9001       对象存储
 ```
+
+---
+
+## Docker 构建说明
+
+多阶段构建，最终镜像仅包含运行所需的 JRE 和 JAR 包，约 **195MB**。
+
+```dockerfile
+# 第一阶段：编译（Maven + JDK）
+FROM maven:3.9-eclipse-temurin-21 AS build
+# 第二阶段：运行（仅 JRE）
+FROM eclipse-temurin:21-jre
+```
+
+首次构建因需下载 Maven 依赖较慢，后续修改仅重新编译，秒级完成。
 
 ---
 

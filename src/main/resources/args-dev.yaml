@@ -39,4 +39,5 @@ op:
 
 worker:
   api-url: https://api.lxpavilion.top
+  admin-token: 【必填】Worker 管理 Token（从 git 历史清理，请轮换后回填）
 

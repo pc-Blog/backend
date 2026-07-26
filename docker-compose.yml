@@ -1,0 +1,81 @@
+name: "Blog"
+
+services:
+  bg-redis:
+    image: redis
+    container_name: bg-redis
+    ports:
+      - "16379:6379"
+    volumes:
+      - /volume/Blog/redis/data:/data
+      - /volume/Blog/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - blog-network
+
+  bg-postgres:
+    image: postgres:16.3
+    container_name: bg-postgres
+    environment:
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - "15432:5432"
+    volumes:
+      - /volume/Blog/postgres/data:/var/lib/postgresql/data
+    networks:
+      - blog-network
+
+  bg-minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: bg-minio
+    ports:
+      - "19090:9000"
+      - "19000:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - /volume/Blog/minio/data:/data
+      - /volume/Blog/minio/config:/root/.minio
+    command: server /data --console-address ":9001"
+    networks:
+      - blog-network
+
+  bg-nginx:
+    image: nginx:latest
+    container_name: bg-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - /volume/Blog/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - /volume/Blog/nginx/html:/usr/share/nginx/html
+      - /volume/Blog/nginx/logs:/var/log/nginx
+    networks:
+      - blog-network
+
+  bg-api:
+    image: bg-api:latest
+    container_name: bg-api
+    ports:
+      - "18016:8080"
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - blog-network
+    restart: unless-stopped
+
+  bg-blog:
+    image: blog-next
+    container_name: bg-blog
+    ports:
+      - "13000:3000"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - blog-network
+    restart: unless-stopped
+
+networks:
+  blog-network:
+    name: blog-network
+    driver: bridge

@@ -45,7 +45,7 @@ public class DashboardController {
         vo.setArticleCount(articleMapper.selectCount(
                 new LambdaQueryWrapper<Article>().eq(Article::getDeleted, 0).eq(Article::getIsPublished, 1)));
         vo.setProjectCount(projectMapper.selectCount(
-                new LambdaQueryWrapper<Project>().eq(Project::getDeleted, 0).eq(Project::getIsPublished, 1)));
+                new LambdaQueryWrapper<Project>().eq(Project::getDeleted, 0)));
         vo.setSkillCount(skillMapper.selectCount(
                 new LambdaQueryWrapper<Skill>().eq(Skill::getDeleted, 0)));
         vo.setTimelineCount(timelineMapper.selectCount(

@@ -133,35 +133,22 @@ COMMENT ON COLUMN t_article_tag.article_id IS '文章ID';
 COMMENT ON COLUMN t_article_tag.tag_id    IS '标签ID';
 
 -- ============================================
--- 6. 项目作品
+-- 6. 项目卡片（点击跳转 GitHub 仓库）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_project (
     id           BIGSERIAL      PRIMARY KEY,
     name         VARCHAR(128)   NOT NULL,
     summary      VARCHAR(512),
-    content      TEXT,
-    cover_image  VARCHAR(512),
-    category_id  BIGINT,
     github_url   VARCHAR(512),
-    demo_url     VARCHAR(512),
-    sort_order   INTEGER        NOT NULL DEFAULT 0,
-    is_published INTEGER        NOT NULL DEFAULT 1,
     deleted      INTEGER        NOT NULL DEFAULT 0,
     create_time  TIMESTAMP      NOT NULL DEFAULT NOW(),
     update_time  TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS idx_project_category ON t_project(category_id);
-COMMENT ON TABLE  t_project            IS '项目作品集';
+COMMENT ON TABLE  t_project            IS '项目卡片（点击跳转 GitHub 仓库）';
 COMMENT ON COLUMN t_project.id         IS '主键ID';
 COMMENT ON COLUMN t_project.name       IS '项目名称';
-COMMENT ON COLUMN t_project.summary    IS '项目简介';
-COMMENT ON COLUMN t_project.content    IS '项目详情（Markdown）';
-COMMENT ON COLUMN t_project.cover_image IS '封面图URL';
-COMMENT ON COLUMN t_project.category_id IS '所属分类ID';
+COMMENT ON COLUMN t_project.summary    IS '项目描述';
 COMMENT ON COLUMN t_project.github_url IS 'GitHub 仓库地址';
-COMMENT ON COLUMN t_project.demo_url   IS '在线演示地址';
-COMMENT ON COLUMN t_project.sort_order IS '排序值，越小越靠前';
-COMMENT ON COLUMN t_project.is_published IS '发布状态：0=草稿 1=已发布';
 COMMENT ON COLUMN t_project.deleted    IS '逻辑删除：0=正常 1=删除';
 COMMENT ON COLUMN t_project.create_time IS '创建时间';
 COMMENT ON COLUMN t_project.update_time IS '更新时间';

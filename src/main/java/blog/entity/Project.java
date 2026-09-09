@@ -2,7 +2,6 @@ package blog.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -19,22 +18,15 @@ public class Project {
     @Size(max = 128, message = "项目名称不能超过128个字符")
     private String name;
 
-    @Size(max = 512, message = "项目简介不能超过512个字符")
+    @Size(max = 512, message = "项目描述不能超过512个字符")
     private String summary;
 
-    private String content;
-    private String coverImage;
-
-    @NotNull(message = "项目分类不能为空")
-    private Long categoryId;
+    @NotBlank(message = "GitHub 仓库地址不能为空")
+    @Size(max = 512, message = "GitHub 仓库地址不能超过512个字符")
+    private String githubUrl;
 
     @TableField(exist = false)
     private List<Long> techIds;
-
-    private String githubUrl;
-    private String demoUrl;
-    private Integer sortOrder;
-    private Integer isPublished;
 
     @TableLogic(value = "0", delval = "1")
     private Integer deleted;

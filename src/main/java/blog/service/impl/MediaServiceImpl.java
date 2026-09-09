@@ -4,11 +4,9 @@ import blog.common.PageDTO;
 import blog.common.PageVO;
 import blog.entity.Article;
 import blog.entity.Media;
-import blog.entity.Project;
 import blog.exception.BaseException;
 import blog.mapper.ArticleMapper;
 import blog.mapper.MediaMapper;
-import blog.mapper.ProjectMapper;
 import blog.service.MediaService;
 import blog.util.MinioUtil;
 import blog.util.PageUtil;
@@ -35,12 +33,10 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
 
     private final MinioUtil minioUtil;
     private final ArticleMapper articleMapper;
-    private final ProjectMapper projectMapper;
 
-    public MediaServiceImpl(MinioUtil minioUtil, ArticleMapper articleMapper, ProjectMapper projectMapper) {
+    public MediaServiceImpl(MinioUtil minioUtil, ArticleMapper articleMapper) {
         this.minioUtil = minioUtil;
         this.articleMapper = articleMapper;
-        this.projectMapper = projectMapper;
     }
 
     @Override
@@ -140,21 +136,13 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
     }
 
     private void checkReferences(String fileUrl) {
-        var articleWrapper = new LambdaQueryWrapper<Article>()
-                .like(Article::getCoverImage, fileUrl)
-                .eq(Article::getDeleted, 0);
-        long articleCount = articleMapper.selectCount(articleWrapper);
+        long articleCount = articleMapper.selectCount(
+                new LambdaQueryWrapper<Article>()
+                        .like(Article::getCoverImage, fileUrl)
+                        .eq(Article::getDeleted, 0));
 
-        var projectWrapper = new LambdaQueryWrapper<Project>()
-                .like(Project::getCoverImage, fileUrl)
-                .eq(Project::getDeleted, 0);
-        long projectCount = projectMapper.selectCount(projectWrapper);
-
-        if (articleCount > 0 || projectCount > 0) {
-            List<String> refs = new ArrayList<>();
-            if (articleCount > 0) refs.add(articleCount + "篇文章");
-            if (projectCount > 0) refs.add(projectCount + "个项目");
-            throw new BaseException("文件被" + String.join("、", refs) + "引用，无法删除");
+        if (articleCount > 0) {
+            throw new BaseException("文件被" + articleCount + "篇文章引用，无法删除");
         }
     }
 }

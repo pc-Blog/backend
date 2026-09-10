@@ -14,13 +14,6 @@ public class Project {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    @NotBlank(message = "项目名称不能为空")
-    @Size(max = 128, message = "项目名称不能超过128个字符")
-    private String name;
-
-    @Size(max = 512, message = "项目描述不能超过512个字符")
-    private String summary;
-
     @NotBlank(message = "GitHub 仓库地址不能为空")
     @Size(max = 512, message = "GitHub 仓库地址不能超过512个字符")
     private String githubUrl;

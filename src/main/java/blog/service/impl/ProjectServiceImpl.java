@@ -57,8 +57,8 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
     public PageVO<ProjectListVO> adminPage(PageDTO<Project> dto) {
         Project query = dto.getQuery();
         var wrapper = new LambdaQueryWrapper<Project>().eq(Project::getDeleted, 0);
-        if (query != null && query.getName() != null && !query.getName().isBlank()) {
-            wrapper.like(Project::getName, query.getName());
+        if (query != null && query.getGithubUrl() != null && !query.getGithubUrl().isBlank()) {
+            wrapper.like(Project::getGithubUrl, query.getGithubUrl());
         }
         wrapper.orderByDesc(Project::getCreateTime);
         var page = PageUtil.<Project>toPage(dto);
@@ -111,8 +111,6 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
     private ProjectListVO toListVO(Project project) {
         ProjectListVO vo = new ProjectListVO();
         vo.setId(project.getId());
-        vo.setName(project.getName());
-        vo.setSummary(project.getSummary());
         vo.setGithubUrl(project.getGithubUrl());
         vo.setCreateTime(project.getCreateTime());
         vo.setUpdateTime(project.getUpdateTime());

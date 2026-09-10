@@ -133,21 +133,17 @@ COMMENT ON COLUMN t_article_tag.article_id IS '文章ID';
 COMMENT ON COLUMN t_article_tag.tag_id    IS '标签ID';
 
 -- ============================================
--- 6. 项目卡片（点击跳转 GitHub 仓库）
+-- 6. 项目卡片（GitHub 仓库信息由前端调用 GitHub API 获取）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_project (
     id           BIGSERIAL      PRIMARY KEY,
-    name         VARCHAR(128)   NOT NULL,
-    summary      VARCHAR(512),
     github_url   VARCHAR(512),
     deleted      INTEGER        NOT NULL DEFAULT 0,
     create_time  TIMESTAMP      NOT NULL DEFAULT NOW(),
     update_time  TIMESTAMP
 );
-COMMENT ON TABLE  t_project            IS '项目卡片（点击跳转 GitHub 仓库）';
+COMMENT ON TABLE  t_project            IS '项目卡片（名称/描述/星标/分支由前端调用 GitHub API 实时获取）';
 COMMENT ON COLUMN t_project.id         IS '主键ID';
-COMMENT ON COLUMN t_project.name       IS '项目名称';
-COMMENT ON COLUMN t_project.summary    IS '项目描述';
 COMMENT ON COLUMN t_project.github_url IS 'GitHub 仓库地址';
 COMMENT ON COLUMN t_project.deleted    IS '逻辑删除：0=正常 1=删除';
 COMMENT ON COLUMN t_project.create_time IS '创建时间';

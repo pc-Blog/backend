@@ -150,38 +150,7 @@ COMMENT ON COLUMN t_project.create_time IS '创建时间';
 COMMENT ON COLUMN t_project.update_time IS '更新时间';
 
 -- ============================================
--- 7. 技术栈
--- ============================================
-CREATE TABLE IF NOT EXISTS t_technology (
-    id          BIGSERIAL       PRIMARY KEY,
-    name        VARCHAR(64)     NOT NULL,
-    deleted     INTEGER         NOT NULL DEFAULT 0,
-    create_time TIMESTAMP       NOT NULL DEFAULT NOW(),
-    update_time TIMESTAMP
-);
-COMMENT ON TABLE  t_technology           IS '技术栈';
-COMMENT ON COLUMN t_technology.id        IS '主键ID';
-COMMENT ON COLUMN t_technology.name      IS '技术名称';
-COMMENT ON COLUMN t_technology.deleted   IS '逻辑删除：0=正常 1=删除';
-COMMENT ON COLUMN t_technology.create_time IS '创建时间';
-COMMENT ON COLUMN t_technology.update_time IS '更新时间';
-
--- ============================================
--- 8. 项目-技术关联（多对多）
--- ============================================
-CREATE TABLE IF NOT EXISTS t_project_tech (
-    id          BIGSERIAL       PRIMARY KEY,
-    project_id  BIGINT          NOT NULL,
-    tech_id     BIGINT          NOT NULL,
-    UNIQUE(project_id, tech_id)
-);
-COMMENT ON TABLE  t_project_tech           IS '项目-技术关联表（多对多）';
-COMMENT ON COLUMN t_project_tech.id        IS '主键ID';
-COMMENT ON COLUMN t_project_tech.project_id IS '项目ID';
-COMMENT ON COLUMN t_project_tech.tech_id   IS '技术ID';
-
--- ============================================
--- 9. 学习时间线
+-- 7. 学习时间线
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_timeline (
     id          BIGSERIAL       PRIMARY KEY,

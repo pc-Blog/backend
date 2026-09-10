@@ -2,7 +2,7 @@
 
 栏轩阁个人博客系统的后端 API 服务，基于 **Spring Boot 4 + Java 21**，提供文章、项目、图库、说说等内容的 RESTful API。
 
-前端仓库：[pc-Blog/next](https://github.com/pc-Blog/next)
+前端仓库：[pc-Blog/lxpavilion](https://github.com/pc-Blog/lxpavilion)
 
 ---
 
@@ -14,7 +14,6 @@
 | 语言 | Java 21 |
 | 数据库 | PostgreSQL 16 |
 | ORM | MyBatis-Plus 3.5.15（注解模式，无 XML 映射） |
-| 缓存 | Redis (Lettuce) |
 | 文件存储 | MinIO 8.5.2 |
 | 安全 | Spring Security + JWT (jjwt 0.12.6) + BCrypt |
 | 工具 | Lombok、FastJSON 2.51、SimpleMagic |
@@ -38,13 +37,13 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/pc-Blog/springBoot.git
-cd Blog
+git clone https://github.com/pc-Blog/backend.git
+cd backend
 ```
 
 ### 2. 配置参数
 
-编辑 `src/main/resources/args.yaml`，按实际环境修改数据库、Redis、MinIO 等配置。
+编辑 `src/main/resources/args.yaml`，按实际环境修改数据库、MinIO 等配置。
 
 > Docker 环境下数据库等组件走容器内网，服务名即容器名（如 `bg-postgres`）。本地开发使用 `args-dev.yaml`。
 
@@ -54,7 +53,7 @@ cd Blog
 # 构建镜像
 docker build -t bg-api:latest .
 
-# 启动所有服务（PostgreSQL、Redis、MinIO、Nginx、前端）
+# 启动所有服务（PostgreSQL、MinIO、Nginx、前端）
 docker compose -f docker-compose.yml up -d
 ```
 
@@ -146,7 +145,6 @@ Blog/
 nginx:80       → 反向代理
   ├→ bg-blog:3000       前端（Next.js）
   └→ bg-api:8080         后端（本服务）
-bg-redis:6379            缓存
 bg-postgres:5432         数据库
 bg-minio:9000/9001       对象存储
 ```
@@ -170,7 +168,7 @@ FROM eclipse-temurin:21-jre
 
 ## 相关项目
 
-- [pc-Blog/next](https://github.com/pc-Blog/next) — 前端博客系统（Next.js 16）
+- [pc-Blog/lxpavilion](https://github.com/pc-Blog/lxpavilion) — 前端博客系统（Next.js 16）
 
 ---
 

@@ -76,21 +76,6 @@ spring:
         login-username: admin
         login-password: 123456
 
-  data:
-    redis:
-      host: ${redis.url}
-      port: ${redis.port}
-      password: ${redis.password}
-      database: 0
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: 5000ms
-      timeout: 30000
-      connect-timeout: 5000
-
 mybatis-plus:
   global-config:
     db-config:

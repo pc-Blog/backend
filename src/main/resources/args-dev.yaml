@@ -6,12 +6,6 @@ postgresql:
   username: postgres
   password: 123456
 
-redis:
-  url: "localhost"
-  port: 16379
-  password: 123456
-
-
 internet:
   PORT: 8080
 minio:

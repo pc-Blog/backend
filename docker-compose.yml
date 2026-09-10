@@ -1,18 +1,6 @@
 name: "Blog"
 
 services:
-  bg-redis:
-    image: redis
-    container_name: bg-redis
-    ports:
-      - "16379:6379"
-    volumes:
-      - /volume/Blog/redis/data:/data
-      - /volume/Blog/redis/redis.conf:/usr/local/etc/redis/redis.conf
-    command: redis-server /usr/local/etc/redis/redis.conf
-    networks:
-      - blog-network
-
   bg-postgres:
     image: postgres:16.3
     container_name: bg-postgres

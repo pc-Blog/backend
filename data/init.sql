@@ -545,3 +545,44 @@ COMMENT ON COLUMN t_literature.is_published IS '发布状态：0=隐藏 1=发布
 COMMENT ON COLUMN t_literature.deleted      IS '逻辑删除：0=正常 1=删除';
 COMMENT ON COLUMN t_literature.create_time  IS '创建时间';
 COMMENT ON COLUMN t_literature.update_time  IS '更新时间';
+
+-- ============================================
+-- 26. 日记（一天一行）
+-- 仅本地使用，不参与静态数据同步
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_diary (
+    id          BIGSERIAL   PRIMARY KEY,
+    record_date DATE        NOT NULL,
+    weather     INTEGER     NOT NULL,
+    create_time TIMESTAMP   NOT NULL DEFAULT NOW(),
+    update_time TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_diary_record_date ON t_diary(record_date);
+COMMENT ON TABLE  t_diary             IS '日记日期（一天一行）';
+COMMENT ON COLUMN t_diary.id          IS '主键ID';
+COMMENT ON COLUMN t_diary.record_date IS '记录日期（唯一，一天只能有一篇）';
+COMMENT ON COLUMN t_diary.weather     IS '天气枚举值：1=晴 2=多云 3=阴 4=小雨 5=大雨 6=雪 7=雾 8=雷';
+COMMENT ON COLUMN t_diary.create_time IS '创建时间';
+COMMENT ON COLUMN t_diary.update_time IS '更新时间';
+
+-- ============================================
+-- 27. 日记活动条目（一天多条）
+-- 编辑日记时整天整体替换，故无 update_time / deleted
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_diary_activity (
+    id          BIGSERIAL   PRIMARY KEY,
+    diary_id    BIGINT      NOT NULL,
+    activity    TEXT        NOT NULL,
+    category    INTEGER     NOT NULL,
+    subcategory VARCHAR(50),
+    create_time TIMESTAMP   NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_diary_activity_diary_id ON t_diary_activity(diary_id);
+CREATE INDEX IF NOT EXISTS idx_diary_activity_category ON t_diary_activity(category);
+COMMENT ON TABLE  t_diary_activity             IS '日记活动条目';
+COMMENT ON COLUMN t_diary_activity.id          IS '主键ID';
+COMMENT ON COLUMN t_diary_activity.diary_id    IS '所属日记ID（t_diary.id）';
+COMMENT ON COLUMN t_diary_activity.activity    IS '活动内容';
+COMMENT ON COLUMN t_diary_activity.category    IS '分类枚举值：1=学习 2=工作 3=生活 4=运动 5=娱乐 6=社交';
+COMMENT ON COLUMN t_diary_activity.subcategory IS '小分类名称（字符串，非外键；删除选项不影响历史）';
+COMMENT ON COLUMN t_diary_activity.create_time IS '创建时间';

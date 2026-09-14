@@ -515,3 +515,33 @@ COMMENT ON COLUMN t_bookmark.sort_order IS '排序值，越小越靠前';
 COMMENT ON COLUMN t_bookmark.deleted   IS '逻辑删除：0=正常 1=删除';
 COMMENT ON COLUMN t_bookmark.create_time IS '创建时间';
 COMMENT ON COLUMN t_bookmark.update_time IS '更新时间';
+
+-- ============================================
+-- 25. 文学作品
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_literature (
+    id           BIGSERIAL      PRIMARY KEY,
+    title        VARCHAR(256)   NOT NULL,
+    content      TEXT           NOT NULL,
+    category_id  BIGINT,
+    written_at   DATE,
+    weather      VARCHAR(50),
+    is_published INTEGER        NOT NULL DEFAULT 1,
+    deleted      INTEGER        NOT NULL DEFAULT 0,
+    create_time  TIMESTAMP      NOT NULL DEFAULT NOW(),
+    update_time  TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_literature_published   ON t_literature(is_published, deleted);
+CREATE INDEX IF NOT EXISTS idx_literature_written     ON t_literature(written_at DESC);
+CREATE INDEX IF NOT EXISTS idx_literature_category_id ON t_literature(category_id);
+COMMENT ON TABLE  t_literature              IS '文学作品';
+COMMENT ON COLUMN t_literature.id           IS '主键ID';
+COMMENT ON COLUMN t_literature.title        IS '作品标题';
+COMMENT ON COLUMN t_literature.content      IS '正文（纯文本）';
+COMMENT ON COLUMN t_literature.category_id  IS '分类ID（t_category 中 type=LITERATURE）';
+COMMENT ON COLUMN t_literature.written_at   IS '写作日期';
+COMMENT ON COLUMN t_literature.weather      IS '写作时天气';
+COMMENT ON COLUMN t_literature.is_published IS '发布状态：0=隐藏 1=发布';
+COMMENT ON COLUMN t_literature.deleted      IS '逻辑删除：0=正常 1=删除';
+COMMENT ON COLUMN t_literature.create_time  IS '创建时间';
+COMMENT ON COLUMN t_literature.update_time  IS '更新时间';

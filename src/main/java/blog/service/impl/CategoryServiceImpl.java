@@ -18,8 +18,12 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     public PageVO<Category> page(PageDTO<Category> dto) {
         var wrapper = new LambdaQueryWrapper<Category>().eq(Category::getDeleted, 0);
         Category query = dto.getQuery();
-        if (query != null && query.getName() != null && !query.getName().isBlank())
-            wrapper.like(Category::getName, query.getName());
+        if (query != null) {
+            if (query.getName() != null && !query.getName().isBlank())
+                wrapper.like(Category::getName, query.getName());
+            if (query.getType() != null && !query.getType().isBlank())
+                wrapper.eq(Category::getType, query.getType());
+        }
         var page = PageUtil.<Category>toPage(dto);
         page(page, wrapper);
         return new PageVO<>(page.getTotal(), page.getRecords());

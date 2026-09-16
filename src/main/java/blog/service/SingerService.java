@@ -1,0 +1,16 @@
+package blog.service;
+
+import blog.common.PageDTO;
+import blog.common.PageVO;
+import blog.entity.Singer;
+import com.baomidou.mybatisplus.extension.service.IService;
+
+/**
+ * 歌手服务
+ *
+ * <p>新增/更新走覆写的 {@link IService#save} 与 {@link IService#updateById}，
+ * 在其中做名称唯一校验；删除为逻辑删除，不检查引用、不级联。</p>
+ */
+public interface SingerService extends IService<Singer> {
+    PageVO<Singer> page(PageDTO<Singer> dto);
+}

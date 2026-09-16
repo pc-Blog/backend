@@ -197,12 +197,15 @@ COMMENT ON COLUMN t_skill.update_time IS '更新时间';
 
 -- ============================================
 -- 11. 关于页（Key-Value 结构）
+-- 该表为通用 K-V 单值存储：is_system=0 的项由前端「关于」管理页自由增删改，
+-- is_system=1 的项仅供后端读写（如音乐累计时长），前端接口一律不可见。
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_about (
     id          BIGSERIAL    PRIMARY KEY,
     item_key    VARCHAR(64)  NOT NULL,
     item_value  TEXT,
     sort_order  INTEGER      NOT NULL DEFAULT 0,
+    is_system   INTEGER      NOT NULL DEFAULT 0,
     deleted     INTEGER      NOT NULL DEFAULT 0,
     create_time TIMESTAMP    NOT NULL DEFAULT NOW(),
     update_time TIMESTAMP
@@ -212,6 +215,7 @@ COMMENT ON COLUMN t_about.id           IS '主键ID';
 COMMENT ON COLUMN t_about.item_key     IS '配置键';
 COMMENT ON COLUMN t_about.item_value   IS '配置值';
 COMMENT ON COLUMN t_about.sort_order   IS '排序值，越小越靠前';
+COMMENT ON COLUMN t_about.is_system    IS '是否仅后端管理：0=前端可编辑 1=仅后端管理（不随关于页保存被清除）';
 COMMENT ON COLUMN t_about.deleted      IS '逻辑删除：0=正常 1=删除';
 COMMENT ON COLUMN t_about.create_time  IS '创建时间';
 COMMENT ON COLUMN t_about.update_time  IS '更新时间';

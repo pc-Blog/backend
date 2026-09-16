@@ -25,10 +25,21 @@ import java.util.*;
 public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements MediaService {
 
     private static final long MAX_SIZE = 100 * 1024 * 1024;
+
+    /**
+     * 允许上传的 MIME 白名单。
+     * 音频部分用于音乐模块：迁移既有曲库时经由本接口入库，
+     * 以便统一登记到 t_media（relation_type='music'）并由孤儿扫描覆盖。
+     * FLAC 在不同浏览器/系统上报的 MIME 不一致，故同时收录两种写法。
+     * Opus 的规范 MIME 是 audio/opus（RFC 7845），但 ogg 封装时浏览器多报
+     * audio/ogg，故两种写法都收，避免管理页手动上传 .opus 被误拒。
+     */
     private static final Set<String> ALLOWED_TYPES = Set.of(
             "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
             "application/pdf",
-            "application/zip", "application/x-zip-compressed"
+            "application/zip", "application/x-zip-compressed",
+            "audio/mpeg", "audio/mp4", "audio/aac", "audio/wav", "audio/x-wav",
+            "audio/ogg", "audio/opus", "audio/flac", "audio/x-flac"
     );
 
     private final MinioUtil minioUtil;

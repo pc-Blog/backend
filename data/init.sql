@@ -586,3 +586,86 @@ COMMENT ON COLUMN t_diary_activity.activity    IS '活动内容';
 COMMENT ON COLUMN t_diary_activity.category    IS '分类枚举值：1=学习 2=工作 3=生活 4=运动 5=娱乐 6=社交';
 COMMENT ON COLUMN t_diary_activity.subcategory IS '小分类名称（字符串，非外键；删除选项不影响历史）';
 COMMENT ON COLUMN t_diary_activity.create_time IS '创建时间';
+
+-- ============================================
+-- 28. 歌手
+-- 封面合并自原音乐项目的 t_singer_picture（多图降级为单图）
+-- 音频文件登记在 t_media（relation_type='music'），本表只存业务元信息
+-- 不设空名占位行：未分配歌手的歌曲让 t_music.singer_id 直接为 NULL。
+-- 默认封面不用数据行表示：它是一张固定位置的图，由代码常量引用，不入库、不占 t_media。
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_singer (
+    id          BIGSERIAL    PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL,
+    picture_url VARCHAR(500),
+    deleted     INTEGER      NOT NULL DEFAULT 0,
+    create_time TIMESTAMP    NOT NULL DEFAULT NOW(),
+    update_time TIMESTAMP
+);
+COMMENT ON TABLE  t_singer             IS '歌手';
+COMMENT ON COLUMN t_singer.id          IS '主键ID';
+COMMENT ON COLUMN t_singer.name        IS '歌手名称';
+COMMENT ON COLUMN t_singer.picture_url IS '歌手封面URL（为空时前端回落到默认封面代码常量）';
+COMMENT ON COLUMN t_singer.deleted     IS '逻辑删除：0=正常 1=删除';
+COMMENT ON COLUMN t_singer.create_time IS '创建时间';
+COMMENT ON COLUMN t_singer.update_time IS '更新时间';
+
+-- ============================================
+-- 29. 音乐分类
+-- 原音乐项目表名为 t_category，因与本文档第 3 节的 t_category（文章/项目分类）撞名而改名
+-- 同 t_singer，不设空名占位行：未分配分类的歌曲让 t_music.category_id 直接为 NULL。
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_music_category (
+    id          BIGSERIAL    PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL,
+    deleted     INTEGER      NOT NULL DEFAULT 0,
+    create_time TIMESTAMP    NOT NULL DEFAULT NOW(),
+    update_time TIMESTAMP
+);
+COMMENT ON TABLE  t_music_category             IS '音乐分类';
+COMMENT ON COLUMN t_music_category.id          IS '主键ID';
+COMMENT ON COLUMN t_music_category.name        IS '分类名称';
+COMMENT ON COLUMN t_music_category.deleted     IS '逻辑删除：0=正常 1=删除';
+COMMENT ON COLUMN t_music_category.create_time IS '创建时间';
+COMMENT ON COLUMN t_music_category.update_time IS '更新时间';
+
+-- ============================================
+-- 30. 音乐
+-- 音频文件本体登记在 t_media（relation_type='music'），此处 file_url 为引用副本，
+-- 业务读取时不查 t_media，避免与文件登记表耦合。
+-- 逻辑删除：删歌只置 deleted=1，不动 t_media、不动 MinIO 文件。因此收集引用
+-- （前端孤儿扫描）时必须过滤 deleted=0，否则已删曲目的文件会被判为"仍被引用"
+-- 而永远清不掉；且前端不展示已删曲目，这个泄漏无法从界面察觉。
+-- duration 属歌曲语义（播放器直读），虽源项目由文件解析得出，仍保留在本表。
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_music (
+    id          BIGSERIAL    PRIMARY KEY,
+    title       VARCHAR(512) NOT NULL,
+    file_url    VARCHAR(500) NOT NULL,
+    duration    INTEGER      NOT NULL DEFAULT 0,
+    play_count  INTEGER      NOT NULL DEFAULT 0,
+    is_favorite BOOLEAN      NOT NULL DEFAULT FALSE,
+    last_played TIMESTAMP,
+    singer_id   BIGINT,
+    category_id BIGINT,
+    deleted     INTEGER      NOT NULL DEFAULT 0,
+    create_time TIMESTAMP    NOT NULL DEFAULT NOW(),
+    update_time TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_music_singer_id   ON t_music(singer_id);
+CREATE INDEX IF NOT EXISTS idx_music_category_id ON t_music(category_id);
+CREATE INDEX IF NOT EXISTS idx_music_is_favorite ON t_music(is_favorite);
+CREATE INDEX IF NOT EXISTS idx_music_last_played ON t_music(last_played);
+COMMENT ON TABLE  t_music             IS '音乐';
+COMMENT ON COLUMN t_music.id          IS '主键ID';
+COMMENT ON COLUMN t_music.title       IS '歌曲标题';
+COMMENT ON COLUMN t_music.file_url    IS '音频文件URL（引用副本，权威登记在 t_media）';
+COMMENT ON COLUMN t_music.duration    IS '时长（秒）';
+COMMENT ON COLUMN t_music.play_count  IS '播放次数';
+COMMENT ON COLUMN t_music.is_favorite IS '是否收藏（静态同步只导出收藏曲目）';
+COMMENT ON COLUMN t_music.last_played IS '最后播放时间';
+COMMENT ON COLUMN t_music.singer_id   IS '歌手ID（t_singer.id，NULL=未分配歌手）';
+COMMENT ON COLUMN t_music.category_id IS '分类ID（t_music_category.id，NULL=未分配分类）';
+COMMENT ON COLUMN t_music.deleted     IS '逻辑删除：0=正常 1=删除';
+COMMENT ON COLUMN t_music.create_time IS '创建时间';
+COMMENT ON COLUMN t_music.update_time IS '更新时间';

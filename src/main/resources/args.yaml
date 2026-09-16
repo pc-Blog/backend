@@ -27,10 +27,6 @@ jwt:
 frontend:
   url: http://localhost:3000
 
-op:
-  url: http://host.docker.internal
-  port: 8016
-
 worker:
   api-url: https://api.lxpavilion.top
   admin-token: 【必填】Worker 管理 Token（从 git 历史清理，请轮换后回填）

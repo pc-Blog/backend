@@ -2,14 +2,16 @@ package blog.service.impl;
 
 import blog.common.PageDTO;
 import blog.common.PageVO;
-import blog.entity.Article;
 import blog.entity.Media;
 import blog.exception.BaseException;
-import blog.mapper.ArticleMapper;
 import blog.mapper.MediaMapper;
+import blog.service.MediaRefResolver;
 import blog.service.MediaService;
 import blog.util.MinioUtil;
 import blog.util.PageUtil;
+import blog.vo.MediaRefVO;
+import blog.vo.MediaScanResultVO;
+import blog.vo.MediaScanVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
@@ -43,11 +45,11 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
     );
 
     private final MinioUtil minioUtil;
-    private final ArticleMapper articleMapper;
+    private final MediaRefResolver mediaRefResolver;
 
-    public MediaServiceImpl(MinioUtil minioUtil, ArticleMapper articleMapper) {
+    public MediaServiceImpl(MinioUtil minioUtil, MediaRefResolver mediaRefResolver) {
         this.minioUtil = minioUtil;
-        this.articleMapper = articleMapper;
+        this.mediaRefResolver = mediaRefResolver;
     }
 
     @Override
@@ -112,6 +114,23 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
     }
 
     @Override
+    public MediaScanResultVO scanOrphans() {
+        // 一次扫描全部媒体
+        List<Media> allMedia = list(new LambdaQueryWrapper<Media>()
+                .eq(Media::getDeleted, 0)
+                .orderByDesc(Media::getId));
+        // 一次建立「文件URL -> 引用列表」索引，之后按 URL 等值查找
+        Map<String, List<MediaRefVO>> index = mediaRefResolver.buildRefIndex();
+
+        List<MediaScanVO> items = new ArrayList<>(allMedia.size());
+        for (Media m : allMedia) {
+            List<MediaRefVO> refs = index.getOrDefault(m.getFileUrl(), List.of());
+            items.add(MediaScanVO.of(m, refs));
+        }
+        return MediaScanResultVO.of(items);
+    }
+
+    @Override
     @Transactional
     public void deleteWithFile(Long id) {
         Media media = getById(id);
@@ -119,8 +138,8 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
             throw new BaseException("文件不存在或已删除");
         }
 
-        checkReferences(media.getFileUrl());
-
+        // 不做引用校验：删除的依据是孤儿扫描的结果，
+        // 判定集中在 MediaRefResolver，避免删除时再拦一道造成两处规则不一致
         minioUtil.deleteFile(media.getFilePath());
         removeById(id);
     }
@@ -144,16 +163,5 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
         result.put("success", success);
         result.put("errors", errors);
         return result;
-    }
-
-    private void checkReferences(String fileUrl) {
-        long articleCount = articleMapper.selectCount(
-                new LambdaQueryWrapper<Article>()
-                        .like(Article::getCoverImage, fileUrl)
-                        .eq(Article::getDeleted, 0));
-
-        if (articleCount > 0) {
-            throw new BaseException("文件被" + articleCount + "篇文章引用，无法删除");
-        }
     }
 }

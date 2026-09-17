@@ -5,6 +5,7 @@ import blog.common.PageVO;
 import blog.common.Result;
 import blog.entity.Media;
 import blog.service.MediaService;
+import blog.vo.MediaScanResultVO;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import jakarta.validation.Valid;
@@ -84,5 +85,17 @@ public class MediaController {
     public Result<PageVO<Media>> page(@RequestBody PageDTO<Media> dto) {
         log.info("分页查询媒体文件:{}", JSON.toJSONString(dto, SerializerFeature.PrettyFormat));
         return Result.success(mediaService.page(dto));
+    }
+
+    /**
+     * 孤儿扫描：返回全部媒体文件及其引用来源，{@code refs} 为空即为孤儿。
+     *
+     * <p>判定规则集中在 {@code MediaRefResolver}，与删除前的引用校验共用，
+     * 避免前端各自实现导致规则漂移。</p>
+     */
+    @PostMapping("/orphan-scan")
+    public Result<MediaScanResultVO> scanOrphans() {
+        log.info("扫描孤儿媒体文件");
+        return Result.success(mediaService.scanOrphans());
     }
 }

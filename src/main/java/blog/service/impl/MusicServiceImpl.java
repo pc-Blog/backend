@@ -228,7 +228,7 @@ public class MusicServiceImpl extends ServiceImpl<MusicMapper, Music> implements
             return current;
         }
 
-        List<Music> scope = list(buildWrapper(query).orderByAsc(Music::getId));
+        List<Music> scope = list(buildWrapper(query).orderByDesc(Music::getId));
         if (scope.isEmpty()) {
             return null;
         }
@@ -266,7 +266,7 @@ public class MusicServiceImpl extends ServiceImpl<MusicMapper, Music> implements
     /** 计算歌曲在过滤条件下的页码（从 1 开始） */
     private int calcPosition(Long musicId, MusicQueryDTO query, Integer pageSize) {
         int size = (pageSize == null || pageSize <= 0) ? 10 : pageSize;
-        List<Music> scope = list(buildWrapper(query).orderByAsc(Music::getId));
+        List<Music> scope = list(buildWrapper(query).orderByDesc(Music::getId));
         int idx = indexOfId(scope, musicId);
         return idx < 0 ? 1 : idx / size + 1;
     }

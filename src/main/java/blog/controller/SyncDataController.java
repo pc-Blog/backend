@@ -15,17 +15,20 @@ public class SyncDataController {
 
     private final EmailService emailService;
     private final SubscriberService subscriberService;
+    private final CommentService commentService;
     private final CommentReactionService commentReactionService;
     private final CommentUpvoteService commentUpvoteService;
     private final PushLogService pushLogService;
 
     public SyncDataController(EmailService emailService,
                               SubscriberService subscriberService,
+                              CommentService commentService,
                               CommentReactionService commentReactionService,
                               CommentUpvoteService commentUpvoteService,
                               PushLogService pushLogService) {
         this.emailService = emailService;
         this.subscriberService = subscriberService;
+        this.commentService = commentService;
         this.commentReactionService = commentReactionService;
         this.commentUpvoteService = commentUpvoteService;
         this.pushLogService = pushLogService;
@@ -53,6 +56,18 @@ public class SyncDataController {
     @PostMapping("/subscriber/page")
     public Result<PageVO<Subscriber>> pageSubscriber(@RequestBody PageDTO<Subscriber> dto) {
         return Result.success(subscriberService.page(dto));
+    }
+
+    // ── Comments ──
+
+    @GetMapping("/comment/{id}")
+    public Result<Comment> getComment(@PathVariable Long id) {
+        return Result.success(commentService.getById(id));
+    }
+
+    @PostMapping("/comment/page")
+    public Result<PageVO<Comment>> pageComment(@RequestBody PageDTO<Comment> dto) {
+        return Result.success(commentService.page(dto));
     }
 
     // ── Comment Reactions ──

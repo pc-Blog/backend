@@ -39,18 +39,21 @@ public class SyncServiceImpl implements SyncService {
     private final ArticleMapper articleMapper;
     private final EmailMapper emailMapper;
     private final SubscriberMapper subscriberMapper;
+    private final CommentMapper commentMapper;
     private final CommentReactionMapper commentReactionMapper;
     private final CommentUpvoteMapper commentUpvoteMapper;
     private final PushLogMapper pushLogMapper;
     private final UserMapper userMapper;
 
+    /** 同步顺序：users 必须早于 comments，否则评论的 user_id 找不到对应作者 */
     private static final List<String> TABLE_ORDER = List.of(
-            "views", "emails", "subscribers", "reactions", "upvotes", "push-logs", "users"
+            "users", "views", "emails", "subscribers", "comments", "reactions", "upvotes", "push-logs"
     );
 
     public SyncServiceImpl(ArticleMapper articleMapper,
                            EmailMapper emailMapper,
                            SubscriberMapper subscriberMapper,
+                           CommentMapper commentMapper,
                            CommentReactionMapper commentReactionMapper,
                            CommentUpvoteMapper commentUpvoteMapper,
                            PushLogMapper pushLogMapper,
@@ -58,6 +61,7 @@ public class SyncServiceImpl implements SyncService {
         this.articleMapper = articleMapper;
         this.emailMapper = emailMapper;
         this.subscriberMapper = subscriberMapper;
+        this.commentMapper = commentMapper;
         this.commentReactionMapper = commentReactionMapper;
         this.commentUpvoteMapper = commentUpvoteMapper;
         this.pushLogMapper = pushLogMapper;
@@ -90,6 +94,7 @@ public class SyncServiceImpl implements SyncService {
             case "views" -> doSyncViews();
             case "emails" -> doSyncEmails(overwrite);
             case "subscribers" -> doSyncSubscribers(overwrite);
+            case "comments" -> doSyncComments(overwrite);
             case "reactions" -> doSyncReactions(overwrite);
             case "upvotes" -> doSyncUpvotes(overwrite);
             case "push-logs" -> doSyncPushLogs(overwrite);
@@ -161,13 +166,34 @@ public class SyncServiceImpl implements SyncService {
         return result(rows.size(), saved, "subscribers");
     }
 
+    private Result<Map<String, Object>> doSyncComments(boolean overwrite) {
+        // Comment.deletedFlag 已退出全局逻辑删除，这里的 delete 是真正的物理删除，
+        // 因此可以安全地按 D1 的原 id 重新插入
+        if (overwrite) commentMapper.delete(new LambdaQueryWrapper<Comment>().isNotNull(Comment::getId));
+        JSONArray rows = fetchWorker("comments", overwrite ? null : getLastSyncStr("comments"));
+        if (rows == null) return Result.error("拉取 comments 失败");
+        int saved = batchInsert(rows, row -> {
+            Comment c = new Comment();
+            c.setId(row.getLong("id"));
+            c.setPath(row.getString("path"));
+            c.setParentId(row.getLong("parent_id"));
+            c.setUserId(row.getLong("user_id"));
+            c.setContent(row.getString("content"));
+            c.setDeletedFlag(row.getInteger("deleted"));
+            c.setCreateTime(parseTime(row.getString("create_time")));
+            c.setUpdateTime(parseTime(row.getString("update_time")));
+            commentMapper.insert(c);
+        });
+        return result(rows.size(), saved, "comments");
+    }
+
     private Result<Map<String, Object>> doSyncReactions(boolean overwrite) {
         if (overwrite) commentReactionMapper.delete(new LambdaQueryWrapper<CommentReaction>().isNotNull(CommentReaction::getId));
         JSONArray rows = fetchWorker("reactions", overwrite ? null : getLastSyncStr("reactions"));
         if (rows == null) return Result.error("拉取 reactions 失败");
         int saved = batchInsert(rows, row -> {
             CommentReaction r = new CommentReaction();
-            r.setSubjectId(row.getString("subject_id"));
+            r.setSubjectId(row.getLong("subject_id"));
             r.setUserId(row.getLong("user_id"));
             r.setReaction(row.getString("reaction"));
             r.setCreatedAt(parseTime(row.getString("created_at")));
@@ -182,7 +208,7 @@ public class SyncServiceImpl implements SyncService {
         if (rows == null) return Result.error("拉取 upvotes 失败");
         int saved = batchInsert(rows, row -> {
             CommentUpvote u = new CommentUpvote();
-            u.setSubjectId(row.getString("subject_id"));
+            u.setSubjectId(row.getLong("subject_id"));
             u.setUserId(row.getLong("user_id"));
             u.setCreatedAt(parseTime(row.getString("created_at")));
             commentUpvoteMapper.insert(u);
@@ -297,6 +323,10 @@ public class SyncServiceImpl implements SyncService {
                 var last = subscriberMapper.selectOne(new LambdaQueryWrapper<Subscriber>().orderByDesc(Subscriber::getCreatedAt).last("LIMIT 1"));
                 yield last != null ? last.getCreatedAt() : null;
             }
+            case "comments" -> {
+                var last = commentMapper.selectOne(new LambdaQueryWrapper<Comment>().orderByDesc(Comment::getCreateTime).last("LIMIT 1"));
+                yield last != null ? last.getCreateTime() : null;
+            }
             case "reactions" -> {
                 var last = commentReactionMapper.selectOne(new LambdaQueryWrapper<CommentReaction>().orderByDesc(CommentReaction::getCreatedAt).last("LIMIT 1"));
                 yield last != null ? last.getCreatedAt() : null;
@@ -317,9 +347,17 @@ public class SyncServiceImpl implements SyncService {
         };
     }
 
+    /**
+     * 解析 Worker 返回的时间字符串。
+     *
+     * D1 统一存 "yyyy-MM-dd HH:mm:ss"（UTC，datetime('now') 的原生格式），
+     * 转成本地时间后写入 MySQL。
+     */
     private LocalDateTime parseTime(String s) {
         if (s == null || s.isEmpty()) return LocalDateTime.now();
-        try { return LocalDateTime.parse(s, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")); }
-        catch (Exception e) { try { return LocalDateTime.parse(s); } catch (Exception e2) { return LocalDateTime.now(); } }
+        return LocalDateTime.parse(s, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                .atZone(java.time.ZoneOffset.UTC)
+                .withZoneSameInstant(java.time.ZoneId.systemDefault())
+                .toLocalDateTime();
     }
 }

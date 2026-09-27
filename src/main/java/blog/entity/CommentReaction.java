@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 public class CommentReaction {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String subjectId;
+    private Long subjectId;
     private Long userId;
     private String reaction;
     private LocalDateTime createdAt;

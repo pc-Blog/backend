@@ -410,11 +410,37 @@ COMMENT ON COLUMN t_subscriber.group_name IS '订阅分组（article/hot）';
 COMMENT ON COLUMN t_subscriber.created_at IS '订阅时间';
 
 -- ============================================
--- 20. 评论 Emoji 反应（从 Worker D1 同步）
+-- 20. 评论（从 Worker D1 同步）
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_comment (
+    id          BIGINT       PRIMARY KEY,
+    path        VARCHAR(255) NOT NULL,
+    parent_id   BIGINT,
+    user_id     BIGINT       NOT NULL,
+    content     TEXT         NOT NULL,
+    deleted     SMALLINT     NOT NULL DEFAULT 0,
+    create_time TIMESTAMP    NOT NULL DEFAULT NOW(),
+    update_time TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_t_comment_path   ON t_comment(path);
+CREATE INDEX IF NOT EXISTS idx_t_comment_parent ON t_comment(parent_id);
+CREATE INDEX IF NOT EXISTS idx_t_comment_user   ON t_comment(user_id);
+COMMENT ON TABLE  t_comment IS '评论（从 Worker D1 同步归档）';
+COMMENT ON COLUMN t_comment.id IS '主键ID（沿用 D1 的 comment.id，不用序列）';
+COMMENT ON COLUMN t_comment.path IS '评论挂载位置（如 /article/12、wishes、chatter-88）';
+COMMENT ON COLUMN t_comment.parent_id IS '父评论ID，顶层评论为 NULL';
+COMMENT ON COLUMN t_comment.user_id IS '作者用户ID';
+COMMENT ON COLUMN t_comment.content IS '评论正文（Markdown 原文）';
+COMMENT ON COLUMN t_comment.deleted IS '是否删除：0 正常 / 1 已删除';
+COMMENT ON COLUMN t_comment.create_time IS '创建时间';
+COMMENT ON COLUMN t_comment.update_time IS '更新时间';
+
+-- ============================================
+-- 21. 评论 Emoji 反应（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_comment_reaction (
     id          BIGSERIAL    PRIMARY KEY,
-    subject_id  VARCHAR(128) NOT NULL,
+    subject_id  BIGINT       NOT NULL,
     user_id     BIGINT       NOT NULL,
     reaction    VARCHAR(32)  NOT NULL,
     created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
@@ -422,29 +448,29 @@ CREATE TABLE IF NOT EXISTS t_comment_reaction (
 );
 COMMENT ON TABLE  t_comment_reaction IS '评论 Emoji 反应（从 Worker D1 同步）';
 COMMENT ON COLUMN t_comment_reaction.id IS '主键ID';
-COMMENT ON COLUMN t_comment_reaction.subject_id IS '评论标识（讨论ID或评论ID）';
+COMMENT ON COLUMN t_comment_reaction.subject_id IS '评论ID（指向 t_comment.id）';
 COMMENT ON COLUMN t_comment_reaction.user_id IS '用户ID';
 COMMENT ON COLUMN t_comment_reaction.reaction IS 'Emoji 反应类型';
 COMMENT ON COLUMN t_comment_reaction.created_at IS '创建时间';
 
 -- ============================================
--- 21. 评论点赞（从 Worker D1 同步）
+-- 22. 评论点赞（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_comment_upvote (
     id          BIGSERIAL    PRIMARY KEY,
-    subject_id  VARCHAR(128) NOT NULL,
+    subject_id  BIGINT       NOT NULL,
     user_id     BIGINT       NOT NULL,
     created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
     UNIQUE(subject_id, user_id)
 );
 COMMENT ON TABLE  t_comment_upvote IS '评论点赞（从 Worker D1 同步）';
 COMMENT ON COLUMN t_comment_upvote.id IS '主键ID';
-COMMENT ON COLUMN t_comment_upvote.subject_id IS '评论标识';
+COMMENT ON COLUMN t_comment_upvote.subject_id IS '评论ID（指向 t_comment.id）';
 COMMENT ON COLUMN t_comment_upvote.user_id IS '用户ID';
 COMMENT ON COLUMN t_comment_upvote.created_at IS '创建时间';
 
 -- ============================================
--- 22. 推送记录（从 Worker D1 同步）
+-- 23. 推送记录（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_push_log (
     id               BIGSERIAL    PRIMARY KEY,
@@ -468,7 +494,7 @@ COMMENT ON COLUMN t_push_log.error_msg IS '错误信息';
 COMMENT ON COLUMN t_push_log.article_ids IS '推送文章ID列表';
 
 -- ============================================
--- 23. 收藏分类
+-- 24. 收藏分类
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_bookmark_category (
     id          BIGSERIAL       PRIMARY KEY,
@@ -490,7 +516,7 @@ COMMENT ON COLUMN t_bookmark_category.create_time IS '创建时间';
 COMMENT ON COLUMN t_bookmark_category.update_time IS '更新时间';
 
 -- ============================================
--- 24. 收藏网站
+-- 25. 收藏网站
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_bookmark (
     id           BIGSERIAL       PRIMARY KEY,
@@ -521,7 +547,7 @@ COMMENT ON COLUMN t_bookmark.create_time IS '创建时间';
 COMMENT ON COLUMN t_bookmark.update_time IS '更新时间';
 
 -- ============================================
--- 25. 文学作品
+-- 26. 文学作品
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_literature (
     id           BIGSERIAL      PRIMARY KEY,
@@ -551,7 +577,7 @@ COMMENT ON COLUMN t_literature.create_time  IS '创建时间';
 COMMENT ON COLUMN t_literature.update_time  IS '更新时间';
 
 -- ============================================
--- 26. 日记（一天一行）
+-- 27. 日记（一天一行）
 -- 仅本地使用，不参与静态数据同步
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_diary (
@@ -570,7 +596,7 @@ COMMENT ON COLUMN t_diary.create_time IS '创建时间';
 COMMENT ON COLUMN t_diary.update_time IS '更新时间';
 
 -- ============================================
--- 27. 日记活动条目（一天多条）
+-- 28. 日记活动条目（一天多条）
 -- 编辑日记时整天整体替换，故无 update_time / deleted
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_diary_activity (
@@ -592,7 +618,7 @@ COMMENT ON COLUMN t_diary_activity.subcategory IS '小分类名称（字符串�
 COMMENT ON COLUMN t_diary_activity.create_time IS '创建时间';
 
 -- ============================================
--- 28. 歌手
+-- 29. 歌手
 -- 封面合并自原音乐项目的 t_singer_picture（多图降级为单图）
 -- 音频文件登记在 t_media（relation_type='music'），本表只存业务元信息
 -- 不设空名占位行：未分配歌手的歌曲让 t_music.singer_id 直接为 NULL。
@@ -615,7 +641,7 @@ COMMENT ON COLUMN t_singer.create_time IS '创建时间';
 COMMENT ON COLUMN t_singer.update_time IS '更新时间';
 
 -- ============================================
--- 29. 音乐分类
+-- 30. 音乐分类
 -- 原音乐项目表名为 t_category，因与本文档第 3 节的 t_category（文章/项目分类）撞名而改名
 -- 同 t_singer，不设空名占位行：未分配分类的歌曲让 t_music.category_id 直接为 NULL。
 -- ============================================
@@ -634,7 +660,7 @@ COMMENT ON COLUMN t_music_category.create_time IS '创建时间';
 COMMENT ON COLUMN t_music_category.update_time IS '更新时间';
 
 -- ============================================
--- 30. 音乐
+-- 31. 音乐
 -- 音频文件本体登记在 t_media（relation_type='music'），此处 file_url 为引用副本，
 -- 业务读取时不查 t_media，避免与文件登记表耦合。
 -- 逻辑删除：删歌只置 deleted=1，不动 t_media、不动 MinIO 文件。因此收集引用

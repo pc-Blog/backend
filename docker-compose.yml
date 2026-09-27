@@ -35,9 +35,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - /volume/Blog/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - /volume/Blog/nginx/html:/usr/share/nginx/html
-      - /volume/Blog/nginx/logs:/var/log/nginx
+      - ./nginx.conf:/etc/nginx/nginx.conf
     networks:
       - blog-network
 

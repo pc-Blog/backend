@@ -14,20 +14,19 @@ public class SyncController {
         this.syncService = syncService;
     }
 
-    /** 全量同步所有数据 */
+    /** 全量覆盖同步所有数据 */
     @PostMapping("/all")
-    public Result<?> syncAll(@RequestParam(defaultValue = "false") boolean overwrite) {
-        return syncService.syncAll(overwrite);
+    public Result<?> syncAll() {
+        return syncService.syncAll();
     }
 
-    /** 同步指定表: /api/sync/table/views */
+    /** 全量覆盖同步指定表: /api/sync/table/views */
     @PostMapping("/table/{name}")
-    public Result<?> syncTable(@PathVariable String name,
-                               @RequestParam(defaultValue = "false") boolean overwrite) {
-        return syncService.syncTable(name, overwrite);
+    public Result<?> syncTable(@PathVariable String name) {
+        return syncService.syncTable(name);
     }
 
-    /** 查看各表最近的同步时间 */
+    /** 查看各表数据更新到什么时候 */
     @GetMapping("/status")
     public Result<?> syncStatus() {
         return syncService.syncStatus();

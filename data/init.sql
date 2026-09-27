@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS t_user (
     avatar               VARCHAR(512),
     email                VARCHAR(128),
     github_id            VARCHAR(32),
+    deleted              SMALLINT        NOT NULL DEFAULT 0,
+    login_time           TIMESTAMP,
     create_time          TIMESTAMP       NOT NULL DEFAULT NOW(),
     update_time          TIMESTAMP
 );
@@ -33,6 +35,8 @@ COMMENT ON COLUMN t_user.nickname            IS '昵称';
 COMMENT ON COLUMN t_user.avatar              IS '头像URL';
 COMMENT ON COLUMN t_user.email               IS '邮箱';
 COMMENT ON COLUMN t_user.github_id           IS 'GitHub OAuth ID';
+COMMENT ON COLUMN t_user.deleted             IS '是否注销：0 正常 / 1 已注销';
+COMMENT ON COLUMN t_user.login_time          IS '最后登录时间';
 COMMENT ON COLUMN t_user.create_time         IS '创建时间';
 COMMENT ON COLUMN t_user.update_time         IS '更新时间';
 
@@ -366,8 +370,11 @@ CREATE TABLE IF NOT EXISTS t_email (
     id          BIGSERIAL    PRIMARY KEY,
     message_id  VARCHAR(255) NOT NULL,
     from_addr   VARCHAR(255) NOT NULL,
+    from_name   VARCHAR(128) NOT NULL DEFAULT '',
     to_addr     VARCHAR(255) NOT NULL,
+    to_name     VARCHAR(128) NOT NULL DEFAULT '',
     forward_to  VARCHAR(255) NOT NULL DEFAULT '',
+    direction   VARCHAR(8)   NOT NULL DEFAULT 'in',
     subject     TEXT         NOT NULL DEFAULT '',
     text_body   TEXT         NOT NULL DEFAULT '',
     html_body   TEXT         NOT NULL DEFAULT '',
@@ -379,8 +386,11 @@ COMMENT ON TABLE  t_email IS '邮件归档（从 Worker D1 同步）';
 COMMENT ON COLUMN t_email.id IS '主键ID';
 COMMENT ON COLUMN t_email.message_id IS '邮件消息ID';
 COMMENT ON COLUMN t_email.from_addr IS '发件人地址';
+COMMENT ON COLUMN t_email.from_name IS '发件人显示名';
 COMMENT ON COLUMN t_email.to_addr IS '收件人地址';
+COMMENT ON COLUMN t_email.to_name IS '收件人显示名';
 COMMENT ON COLUMN t_email.forward_to IS '转发目标地址';
+COMMENT ON COLUMN t_email.direction IS '收发方向：in 收件 / out 发件';
 COMMENT ON COLUMN t_email.subject IS '邮件主题';
 COMMENT ON COLUMN t_email.text_body IS '纯文本正文';
 COMMENT ON COLUMN t_email.html_body IS 'HTML 正文';
@@ -475,18 +485,18 @@ CREATE TABLE IF NOT EXISTS t_push_log (
     group_name       VARCHAR(64)  NOT NULL DEFAULT 'article',
     status           VARCHAR(32)  NOT NULL DEFAULT 'success',
     error_msg        TEXT,
-    article_ids      TEXT         NOT NULL DEFAULT ''
+    article_ids      TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_t_push_log_pushed_at ON t_push_log(pushed_at);
-COMMENT ON TABLE  t_push_log IS '推送记录（从 Worker D1 同步）';
+COMMENT ON TABLE  t_push_log IS '推送记录（从 Worker D1 同步，D1 侧每分组只保留最近 10 条）';
 COMMENT ON COLUMN t_push_log.id IS '主键ID';
 COMMENT ON COLUMN t_push_log.pushed_at IS '推送时间';
 COMMENT ON COLUMN t_push_log.article_count IS '推送文章数';
 COMMENT ON COLUMN t_push_log.subscriber_count IS '推送订阅者数';
 COMMENT ON COLUMN t_push_log.group_name IS '推送分组';
-COMMENT ON COLUMN t_push_log.status IS '推送状态（success/failed）';
+COMMENT ON COLUMN t_push_log.status IS '推送状态（success/skipped/failed）';
 COMMENT ON COLUMN t_push_log.error_msg IS '错误信息';
-COMMENT ON COLUMN t_push_log.article_ids IS '推送文章ID列表';
+COMMENT ON COLUMN t_push_log.article_ids IS 'article 分组为新推送的 id（JSON 数组）；hot-topics 分组为累积的「url哈希:推送时间」列表';
 
 -- ============================================
 -- 22. 收藏分类

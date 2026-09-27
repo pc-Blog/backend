@@ -1,5 +1,6 @@
 package blog.entity;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -38,9 +39,12 @@ public class Comment {
 
     /**
      * 是否已删除：0 正常 / 1 已删除。
+     *
+     * <p>D1 的列名是 {@code deleted}，属性名对不上，Jackson 与 fastjson 都需要显式指明列名。
      */
     @TableField("deleted")
     @JsonProperty("deleted")
+    @JSONField(name = "deleted")
     private Integer deletedFlag;
 
     /** 创建时间（D1 的记录时间） */

@@ -19,7 +19,7 @@ public class SyncTask {
     @Scheduled(cron = "0 0 3 * * 0")
     public void autoSync() {
         log.info("定时同步开始");
-        var result = syncService.syncAll(false);
+        var result = syncService.syncAll();
         log.info("定时同步结束: {}", result);
     }
 }

@@ -8,21 +8,29 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+/**
+ * D1 数据同步服务：把 Worker 的 D1 表整表拉回来覆盖 PostgreSQL 镜像。
+ *
+ * <p>只有全量覆盖一种方式——每张表先清空再按 D1 原样导入，没有增量模式，
+ * 因此不需要游标，也不需要区分新增与更新。
+ *
+ * <p>无状态、线程安全。依赖 {@code worker.api-url} 与 {@code worker.admin-token} 两项配置，
+ * 两者缺失时拉取会失败并返回错误，不会清空镜像表。
+ */
 @Slf4j
 @Service
 public class SyncServiceImpl implements SyncService {
@@ -73,32 +81,36 @@ public class SyncServiceImpl implements SyncService {
     // ════════════════════════════════════════════
 
     @Override
-    public Result<Map<String, Object>> syncAll(boolean overwrite) {
+    public Result<Map<String, Object>> syncAll() {
         Map<String, Object> results = new LinkedHashMap<>();
-        boolean allOk = true;
+        List<String> failed = new ArrayList<>();
         for (String name : TABLE_ORDER) {
             try {
-                results.put(name, syncTable(name, overwrite));
+                results.put(name, syncTable(name));
             } catch (Exception e) {
                 log.error("同步 {} 失败", name, e);
-                results.put(name, Map.of("error", e.getMessage()));
-                allOk = false;
+                // 用 String.valueOf 兜住 null，Map.of 不接受 null 值
+                results.put(name, Map.of("error", String.valueOf(e.getMessage())));
+                failed.add(name);
             }
         }
-        return allOk ? Result.success(results) : Result.error("部分同步失败");
+        // 失败时带上表名，否则前端只看到"部分同步失败"，无从判断是哪张表
+        return failed.isEmpty()
+                ? Result.success(results)
+                : Result.error("部分同步失败: " + String.join(", ", failed));
     }
 
     @Override
-    public Result<Map<String, Object>> syncTable(String tableName, boolean overwrite) {
+    public Result<Map<String, Object>> syncTable(String tableName) {
         return switch (tableName) {
             case "views" -> doSyncViews();
-            case "emails" -> doSyncEmails(overwrite);
-            case "subscribers" -> doSyncSubscribers(overwrite);
-            case "comments" -> doSyncComments(overwrite);
-            case "reactions" -> doSyncReactions(overwrite);
-            case "upvotes" -> doSyncUpvotes(overwrite);
-            case "push-logs" -> doSyncPushLogs(overwrite);
-            case "users" -> doSyncUsers(overwrite);
+            case "emails" -> doSyncEmails();
+            case "subscribers" -> doSyncSubscribers();
+            case "comments" -> doSyncComments();
+            case "reactions" -> doSyncReactions();
+            case "upvotes" -> doSyncUpvotes();
+            case "push-logs" -> doSyncPushLogs();
+            case "users" -> doSyncUsers();
             default -> Result.error("未知表: " + tableName);
         };
     }
@@ -117,7 +129,7 @@ public class SyncServiceImpl implements SyncService {
     // ════════════════════════════════════════════
 
     private Result<Map<String, Object>> doSyncViews() {
-        JSONArray rows = fetchWorker("views", null);
+        JSONArray rows = fetchWorker("views");
         if (rows == null) return Result.error("拉取 views 失败");
         int saved = 0;
         for (int i = 0; i < rows.size(); i++) {
@@ -132,134 +144,59 @@ public class SyncServiceImpl implements SyncService {
         return result(rows.size(), saved, "views");
     }
 
-    private Result<Map<String, Object>> doSyncEmails(boolean overwrite) {
-        if (overwrite) emailMapper.delete(new LambdaQueryWrapper<Email>().isNotNull(Email::getId));
-        JSONArray rows = fetchWorker("emails", overwrite ? null : getLastSyncStr("emails"));
+    private Result<Map<String, Object>> doSyncEmails() {
+        JSONArray rows = fetchWorker("emails");
         if (rows == null) return Result.error("拉取 emails 失败");
-        int saved = batchInsert(rows, row -> {
-            Email e = new Email();
-            e.setMessageId(row.getString("message_id"));
-            e.setFromAddr(row.getString("from_addr"));
-            e.setToAddr(row.getString("to_addr"));
-            e.setForwardTo(row.getString("forward_to"));
-            e.setSubject(row.getString("subject"));
-            e.setTextBody(row.getString("text_body"));
-            e.setHtmlBody(row.getString("html_body"));
-            e.setHeaders(row.getString("headers"));
-            e.setCreatedAt(parseTime(row.getString("created_at")));
-            emailMapper.insert(e);
-        });
+        clear(emailMapper);
+        int saved = batchInsert(rows, row -> emailMapper.insert(toEntity(row, Email.class)));
         return result(rows.size(), saved, "emails");
     }
 
-    private Result<Map<String, Object>> doSyncSubscribers(boolean overwrite) {
-        if (overwrite) subscriberMapper.delete(new LambdaQueryWrapper<Subscriber>().isNotNull(Subscriber::getId));
-        JSONArray rows = fetchWorker("subscribers", overwrite ? null : getLastSyncStr("subscribers"));
+    private Result<Map<String, Object>> doSyncSubscribers() {
+        JSONArray rows = fetchWorker("subscribers");
         if (rows == null) return Result.error("拉取 subscribers 失败");
-        int saved = batchInsert(rows, row -> {
-            Subscriber s = new Subscriber();
-            s.setEmail(row.getString("email"));
-            s.setGroupName(row.getString("group_name"));
-            s.setCreatedAt(parseTime(row.getString("created_at")));
-            subscriberMapper.insert(s);
-        });
+        clear(subscriberMapper);
+        int saved = batchInsert(rows, row -> subscriberMapper.insert(toEntity(row, Subscriber.class)));
         return result(rows.size(), saved, "subscribers");
     }
 
-    private Result<Map<String, Object>> doSyncComments(boolean overwrite) {
-        // Comment.deletedFlag 已退出全局逻辑删除，这里的 delete 是真正的物理删除，
-        // 因此可以安全地按 D1 的原 id 重新插入
-        if (overwrite) commentMapper.delete(new LambdaQueryWrapper<Comment>().isNotNull(Comment::getId));
-        JSONArray rows = fetchWorker("comments", overwrite ? null : getLastSyncStr("comments"));
+    private Result<Map<String, Object>> doSyncComments() {
+        JSONArray rows = fetchWorker("comments");
         if (rows == null) return Result.error("拉取 comments 失败");
-        int saved = batchInsert(rows, row -> {
-            Comment c = new Comment();
-            c.setId(row.getLong("id"));
-            c.setPath(row.getString("path"));
-            c.setParentId(row.getLong("parent_id"));
-            c.setUserId(row.getLong("user_id"));
-            c.setContent(row.getString("content"));
-            c.setDeletedFlag(row.getInteger("deleted"));
-            c.setCreateTime(parseTime(row.getString("create_time")));
-            c.setUpdateTime(parseTime(row.getString("update_time")));
-            commentMapper.insert(c);
-        });
+        clear(commentMapper);
+        int saved = batchInsert(rows, row -> commentMapper.insert(toEntity(row, Comment.class)));
         return result(rows.size(), saved, "comments");
     }
 
-    private Result<Map<String, Object>> doSyncReactions(boolean overwrite) {
-        if (overwrite) commentReactionMapper.delete(new LambdaQueryWrapper<CommentReaction>().isNotNull(CommentReaction::getId));
-        JSONArray rows = fetchWorker("reactions", overwrite ? null : getLastSyncStr("reactions"));
+    private Result<Map<String, Object>> doSyncReactions() {
+        JSONArray rows = fetchWorker("reactions");
         if (rows == null) return Result.error("拉取 reactions 失败");
-        int saved = batchInsert(rows, row -> {
-            CommentReaction r = new CommentReaction();
-            r.setSubjectId(row.getLong("subject_id"));
-            r.setUserId(row.getLong("user_id"));
-            r.setReaction(row.getString("reaction"));
-            r.setCreatedAt(parseTime(row.getString("created_at")));
-            commentReactionMapper.insert(r);
-        });
+        clear(commentReactionMapper);
+        int saved = batchInsert(rows, row -> commentReactionMapper.insert(toEntity(row, CommentReaction.class)));
         return result(rows.size(), saved, "reactions");
     }
 
-    private Result<Map<String, Object>> doSyncUpvotes(boolean overwrite) {
-        if (overwrite) commentUpvoteMapper.delete(new LambdaQueryWrapper<CommentUpvote>().isNotNull(CommentUpvote::getId));
-        JSONArray rows = fetchWorker("upvotes", overwrite ? null : getLastSyncStr("upvotes"));
+    private Result<Map<String, Object>> doSyncUpvotes() {
+        JSONArray rows = fetchWorker("upvotes");
         if (rows == null) return Result.error("拉取 upvotes 失败");
-        int saved = batchInsert(rows, row -> {
-            CommentUpvote u = new CommentUpvote();
-            u.setSubjectId(row.getLong("subject_id"));
-            u.setUserId(row.getLong("user_id"));
-            u.setCreatedAt(parseTime(row.getString("created_at")));
-            commentUpvoteMapper.insert(u);
-        });
+        clear(commentUpvoteMapper);
+        int saved = batchInsert(rows, row -> commentUpvoteMapper.insert(toEntity(row, CommentUpvote.class)));
         return result(rows.size(), saved, "upvotes");
     }
 
-    private Result<Map<String, Object>> doSyncPushLogs(boolean overwrite) {
-        if (overwrite) pushLogMapper.delete(new LambdaQueryWrapper<PushLog>().isNotNull(PushLog::getId));
-        JSONArray rows = fetchWorker("push-logs", overwrite ? null : getLastSyncStr("push-logs"));
+    private Result<Map<String, Object>> doSyncPushLogs() {
+        JSONArray rows = fetchWorker("push-logs");
         if (rows == null) return Result.error("拉取 push-logs 失败");
-        int saved = batchInsert(rows, row -> {
-            PushLog p = new PushLog();
-            p.setPushedAt(parseTime(row.getString("pushed_at")));
-            p.setArticleCount(row.getInteger("article_count"));
-            p.setSubscriberCount(row.getInteger("subscriber_count"));
-            p.setGroupName(row.getString("group_name"));
-            p.setStatus(row.getString("status"));
-            p.setErrorMsg(row.getString("error_msg"));
-            p.setArticleIds(row.getString("article_ids") != null ? row.getString("article_ids") : "");
-            pushLogMapper.insert(p);
-        });
+        clear(pushLogMapper);
+        int saved = batchInsert(rows, row -> pushLogMapper.insert(toEntity(row, PushLog.class)));
         return result(rows.size(), saved, "push-logs");
     }
 
-    private Result<Map<String, Object>> doSyncUsers(boolean overwrite) {
-        if (overwrite) userMapper.delete(new LambdaQueryWrapper<User>().isNotNull(User::getId));
-        JSONArray rows = fetchWorker("users", overwrite ? null : getLastSyncStr("users"));
+    private Result<Map<String, Object>> doSyncUsers() {
+        JSONArray rows = fetchWorker("users");
         if (rows == null) return Result.error("拉取 users 失败");
-        int saved = 0;
-        for (int i = 0; i < rows.size(); i++) {
-            try {
-                JSONObject row = rows.getJSONObject(i);
-                String username = row.getString("username");
-                if (username == null) continue;
-                if (!overwrite && userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username)) != null) continue;
-                User u = new User();
-                u.setUsername(username);
-                u.setPassword(row.getString("password"));
-                u.setNickname(row.getString("nickname"));
-                u.setAvatar(row.getString("avatar"));
-                u.setGithubId(row.getString("github_id"));
-                u.setEmail(row.getString("email"));
-                u.setCreateTime(parseTime(row.getString("create_time")));
-                u.setUpdateTime(parseTime(row.getString("update_time")));
-                userMapper.insert(u);
-                saved++;
-            } catch (Exception ex) {
-                log.warn("用户跳过: {}", ex.getMessage());
-            }
-        }
+        clear(userMapper);
+        int saved = batchInsert(rows, row -> userMapper.insert(toEntity(row, User.class)));
         return result(rows.size(), saved, "users");
     }
 
@@ -267,12 +204,16 @@ public class SyncServiceImpl implements SyncService {
     // 工具
     // ════════════════════════════════════════════
 
-    private JSONArray fetchWorker(String endpoint, String since) {
+    /**
+     * 拉取 Worker 上一张表的全量数据。
+     *
+     * @param endpoint {@code /api/sync/} 下的表名，如 {@code emails}
+     * @return D1 的行数组；HTTP 非 200 或返回码不为 1 时返回 {@code null}
+     */
+    private JSONArray fetchWorker(String endpoint) {
         try {
-            String url = workerApiUrl + "/api/sync/" + endpoint;
-            if (since != null) url += "?since=" + URLEncoder.encode(since, StandardCharsets.UTF_8);
             HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(url)).timeout(Duration.ofSeconds(30))
+                    .uri(URI.create(workerApiUrl + "/api/sync/" + endpoint)).timeout(Duration.ofSeconds(30))
                     .header("Authorization", "Bearer " + workerAdminToken)
                     .GET().build();
             HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
@@ -283,6 +224,37 @@ public class SyncServiceImpl implements SyncService {
             log.error("请求 Worker 失败: {}", endpoint, e);
             return null;
         }
+    }
+
+    /**
+     * 清空一张镜像表，是全量覆盖的前置动作。
+     *
+     * <p>条件必须写成 {@code id IS NOT NULL} 而不能留空：Druid 的 WallFilter 会拒绝不带 where
+     * 的 DELETE（delete none condition not allow），留空则整表删除语句根本发不出去。
+     * 实体未参与全局逻辑删除，这里是物理删除，随后可以按 D1 的原 id 重新插入。
+     *
+     * @param mapper 目标表的 Mapper
+     * @param <T>    实体类型
+     */
+    private <T> void clear(BaseMapper<T> mapper) {
+        mapper.delete(new QueryWrapper<T>().isNotNull("id"));
+    }
+
+    /**
+     * 把 D1 的一行按字段名自动映射成实体。
+     *
+     * <p>下划线列名（{@code from_addr}）由 fastjson 的智能匹配对应到驼峰属性，
+     * 时间列解析成的 {@link LocalDateTime} 就是 D1 里的 UTC 墙钟，不做时区换算；
+     * 只有列名与属性名对不上的字段（如 {@code deleted}）需要在实体上加
+     * {@link com.alibaba.fastjson.annotation.JSONField} 指明。
+     *
+     * @param row  D1 返回的一行
+     * @param type 目标实体类型
+     * @param <T>  实体类型
+     * @return 映射后的实体
+     */
+    private <T> T toEntity(JSONObject row, Class<T> type) {
+        return JSON.parseObject(row.toJSONString(), type);
     }
 
     @FunctionalInterface
@@ -303,13 +275,7 @@ public class SyncServiceImpl implements SyncService {
         return Result.success(m);
     }
 
-    private String getLastSyncStr(String table) {
-        LocalDateTime t = getLastSync(table);
-        // 加 1 秒，避免 Worker 端 >= 查询重复拉取最后一条
-        return t != null ? t.plusSeconds(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : null;
-    }
-
-    /** 用数据本身的创建时间字段查 MAX，作为增量同步的起点 */
+    /** 取表中最新一条记录的时间，状态页据此显示该表的数据更新到什么时候 */
     private LocalDateTime getLastSync(String table) {
         return switch (table) {
             case "emails" -> {
@@ -342,19 +308,5 @@ public class SyncServiceImpl implements SyncService {
             }
             default -> null;
         };
-    }
-
-    /**
-     * 解析 Worker 返回的时间字符串。
-     *
-     * D1 统一存 "yyyy-MM-dd HH:mm:ss"（UTC，datetime('now') 的原生格式），
-     * 转成本地时间后写入 MySQL。
-     */
-    private LocalDateTime parseTime(String s) {
-        if (s == null || s.isEmpty()) return LocalDateTime.now();
-        return LocalDateTime.parse(s, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                .atZone(java.time.ZoneOffset.UTC)
-                .withZoneSameInstant(java.time.ZoneId.systemDefault())
-                .toLocalDateTime();
     }
 }

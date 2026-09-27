@@ -35,11 +35,6 @@ public class User {
 
     private String githubId;
 
-    /** 以下三个字段用于 Worker D1 数据同步 */
-    private String githubToken;
-    private String githubRefreshToken;
-    private String githubTokenExpiresAt;
-
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)

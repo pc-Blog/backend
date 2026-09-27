@@ -5,10 +5,11 @@
 -- 使用方式：
 --   psql -U your_user -d your_db -f init.sql
 -- 或直接在 SQL 工具中执行
+--
+-- 注意：以下语句均为 CREATE TABLE IF NOT EXISTS，
+-- 对已存在的库重复执行不会修改既有表结构；
+-- 字段的增删改需另行手写 ALTER，或先删表再执行本脚本。
 -- ============================================
-
--- 启用 UUID 扩展（如需）
--- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================
 -- 1. 管理员用户
@@ -21,9 +22,6 @@ CREATE TABLE IF NOT EXISTS t_user (
     avatar               VARCHAR(512),
     email                VARCHAR(128),
     github_id            VARCHAR(32),
-    github_token         VARCHAR(512),
-    github_refresh_token VARCHAR(512),
-    github_token_expires_at VARCHAR(32),
     create_time          TIMESTAMP       NOT NULL DEFAULT NOW(),
     update_time          TIMESTAMP
 );
@@ -35,9 +33,6 @@ COMMENT ON COLUMN t_user.nickname            IS '昵称';
 COMMENT ON COLUMN t_user.avatar              IS '头像URL';
 COMMENT ON COLUMN t_user.email               IS '邮箱';
 COMMENT ON COLUMN t_user.github_id           IS 'GitHub OAuth ID';
-COMMENT ON COLUMN t_user.github_token        IS 'GitHub OAuth access token';
-COMMENT ON COLUMN t_user.github_refresh_token IS 'GitHub OAuth refresh token';
-COMMENT ON COLUMN t_user.github_token_expires_at IS 'GitHub token 过期时间';
 COMMENT ON COLUMN t_user.create_time         IS '创建时间';
 COMMENT ON COLUMN t_user.update_time         IS '更新时间';
 
@@ -173,7 +168,7 @@ COMMENT ON COLUMN t_timeline.create_time IS '创建时间';
 COMMENT ON COLUMN t_timeline.update_time IS '更新时间';
 
 -- ============================================
--- 10. 技能熟练度
+-- 8. 技能熟练度
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_skill (
     id          BIGSERIAL       PRIMARY KEY,
@@ -196,7 +191,7 @@ COMMENT ON COLUMN t_skill.create_time IS '创建时间';
 COMMENT ON COLUMN t_skill.update_time IS '更新时间';
 
 -- ============================================
--- 11. 关于页（Key-Value 结构）
+-- 9. 关于页（Key-Value 结构）
 -- 该表为通用 K-V 单值存储：is_system=0 的项由前端「关于」管理页自由增删改，
 -- is_system=1 的项仅供后端读写（如音乐累计时长），前端接口一律不可见。
 -- ============================================
@@ -221,7 +216,7 @@ COMMENT ON COLUMN t_about.create_time  IS '创建时间';
 COMMENT ON COLUMN t_about.update_time  IS '更新时间';
 
 -- ============================================
--- 12. 上传媒体文件
+-- 10. 上传媒体文件
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_media (
     id                BIGSERIAL   PRIMARY KEY,
@@ -250,7 +245,7 @@ COMMENT ON COLUMN t_media.create_time  IS '创建时间';
 COMMENT ON COLUMN t_media.update_time  IS '更新时间';
 
 -- ============================================
--- 13. 相册
+-- 11. 相册
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_album (
     id           BIGSERIAL       PRIMARY KEY,
@@ -273,7 +268,7 @@ COMMENT ON COLUMN t_album.create_time   IS '创建时间';
 COMMENT ON COLUMN t_album.update_time   IS '更新时间';
 
 -- ============================================
--- 14. 相片（一对多）
+-- 12. 相片（一对多）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_photo (
     id          BIGSERIAL       PRIMARY KEY,
@@ -295,7 +290,7 @@ COMMENT ON COLUMN t_photo.create_time   IS '创建时间';
 COMMENT ON COLUMN t_photo.update_time   IS '更新时间';
 
 -- ============================================
--- 15. 说说/动态
+-- 13. 说说/动态
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_chatter (
     id           BIGSERIAL    PRIMARY KEY,
@@ -316,7 +311,7 @@ COMMENT ON COLUMN t_chatter.create_time IS '创建时间';
 COMMENT ON COLUMN t_chatter.update_time IS '更新时间';
 
 -- ============================================
--- 16. 说说图片（一对多）
+-- 14. 说说图片（一对多）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_chatter_image (
     id          BIGSERIAL       PRIMARY KEY,
@@ -332,7 +327,7 @@ COMMENT ON COLUMN t_chatter_image.url     IS '图片URL';
 COMMENT ON COLUMN t_chatter_image.sort_order IS '排序值，越小越靠前';
 
 -- ============================================
--- 17. 友情链接
+-- 15. 友情链接
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_friend_link (
     id           BIGSERIAL       PRIMARY KEY,
@@ -365,7 +360,7 @@ COMMENT ON COLUMN t_friend_link.create_time IS '创建时间';
 COMMENT ON COLUMN t_friend_link.update_time IS '更新时间';
 
 -- ============================================
--- 18. 邮件归档（从 Worker D1 同步）
+-- 16. 邮件归档（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_email (
     id          BIGSERIAL    PRIMARY KEY,
@@ -393,7 +388,7 @@ COMMENT ON COLUMN t_email.headers IS '邮件头（JSON）';
 COMMENT ON COLUMN t_email.created_at IS '接收时间';
 
 -- ============================================
--- 19. 邮件订阅者（从 Worker D1 同步）
+-- 17. 邮件订阅者（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_subscriber (
     id          BIGSERIAL    PRIMARY KEY,
@@ -410,7 +405,7 @@ COMMENT ON COLUMN t_subscriber.group_name IS '订阅分组（article/hot）';
 COMMENT ON COLUMN t_subscriber.created_at IS '订阅时间';
 
 -- ============================================
--- 20. 评论（从 Worker D1 同步）
+-- 18. 评论（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_comment (
     id          BIGINT       PRIMARY KEY,
@@ -436,7 +431,7 @@ COMMENT ON COLUMN t_comment.create_time IS '创建时间';
 COMMENT ON COLUMN t_comment.update_time IS '更新时间';
 
 -- ============================================
--- 21. 评论 Emoji 反应（从 Worker D1 同步）
+-- 19. 评论 Emoji 反应（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_comment_reaction (
     id          BIGSERIAL    PRIMARY KEY,
@@ -454,7 +449,7 @@ COMMENT ON COLUMN t_comment_reaction.reaction IS 'Emoji 反应类型';
 COMMENT ON COLUMN t_comment_reaction.created_at IS '创建时间';
 
 -- ============================================
--- 22. 评论点赞（从 Worker D1 同步）
+-- 20. 评论点赞（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_comment_upvote (
     id          BIGSERIAL    PRIMARY KEY,
@@ -470,7 +465,7 @@ COMMENT ON COLUMN t_comment_upvote.user_id IS '用户ID';
 COMMENT ON COLUMN t_comment_upvote.created_at IS '创建时间';
 
 -- ============================================
--- 23. 推送记录（从 Worker D1 同步）
+-- 21. 推送记录（从 Worker D1 同步）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_push_log (
     id               BIGSERIAL    PRIMARY KEY,
@@ -494,7 +489,7 @@ COMMENT ON COLUMN t_push_log.error_msg IS '错误信息';
 COMMENT ON COLUMN t_push_log.article_ids IS '推送文章ID列表';
 
 -- ============================================
--- 24. 收藏分类
+-- 22. 收藏分类
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_bookmark_category (
     id          BIGSERIAL       PRIMARY KEY,
@@ -516,7 +511,7 @@ COMMENT ON COLUMN t_bookmark_category.create_time IS '创建时间';
 COMMENT ON COLUMN t_bookmark_category.update_time IS '更新时间';
 
 -- ============================================
--- 25. 收藏网站
+-- 23. 收藏网站
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_bookmark (
     id           BIGSERIAL       PRIMARY KEY,
@@ -547,7 +542,7 @@ COMMENT ON COLUMN t_bookmark.create_time IS '创建时间';
 COMMENT ON COLUMN t_bookmark.update_time IS '更新时间';
 
 -- ============================================
--- 26. 文学作品
+-- 24. 文学作品
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_literature (
     id           BIGSERIAL      PRIMARY KEY,
@@ -577,7 +572,7 @@ COMMENT ON COLUMN t_literature.create_time  IS '创建时间';
 COMMENT ON COLUMN t_literature.update_time  IS '更新时间';
 
 -- ============================================
--- 27. 日记（一天一行）
+-- 25. 日记（一天一行）
 -- 仅本地使用，不参与静态数据同步
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_diary (
@@ -596,7 +591,7 @@ COMMENT ON COLUMN t_diary.create_time IS '创建时间';
 COMMENT ON COLUMN t_diary.update_time IS '更新时间';
 
 -- ============================================
--- 28. 日记活动条目（一天多条）
+-- 26. 日记活动条目（一天多条）
 -- 编辑日记时整天整体替换，故无 update_time / deleted
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_diary_activity (
@@ -618,7 +613,7 @@ COMMENT ON COLUMN t_diary_activity.subcategory IS '小分类名称（字符串�
 COMMENT ON COLUMN t_diary_activity.create_time IS '创建时间';
 
 -- ============================================
--- 29. 歌手
+-- 27. 歌手
 -- 封面合并自原音乐项目的 t_singer_picture（多图降级为单图）
 -- 音频文件登记在 t_media（relation_type='music'），本表只存业务元信息
 -- 不设空名占位行：未分配歌手的歌曲让 t_music.singer_id 直接为 NULL。
@@ -641,7 +636,7 @@ COMMENT ON COLUMN t_singer.create_time IS '创建时间';
 COMMENT ON COLUMN t_singer.update_time IS '更新时间';
 
 -- ============================================
--- 30. 音乐分类
+-- 28. 音乐分类
 -- 原音乐项目表名为 t_category，因与本文档第 3 节的 t_category（文章/项目分类）撞名而改名
 -- 同 t_singer，不设空名占位行：未分配分类的歌曲让 t_music.category_id 直接为 NULL。
 -- ============================================
@@ -660,7 +655,7 @@ COMMENT ON COLUMN t_music_category.create_time IS '创建时间';
 COMMENT ON COLUMN t_music_category.update_time IS '更新时间';
 
 -- ============================================
--- 31. 音乐
+-- 29. 音乐
 -- 音频文件本体登记在 t_media（relation_type='music'），此处 file_url 为引用副本，
 -- 业务读取时不查 t_media，避免与文件登记表耦合。
 -- 逻辑删除：删歌只置 deleted=1，不动 t_media、不动 MinIO 文件。因此收集引用

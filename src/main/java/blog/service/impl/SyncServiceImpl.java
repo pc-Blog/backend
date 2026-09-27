@@ -251,9 +251,6 @@ public class SyncServiceImpl implements SyncService {
                 u.setNickname(row.getString("nickname"));
                 u.setAvatar(row.getString("avatar"));
                 u.setGithubId(row.getString("github_id"));
-                u.setGithubToken(row.getString("github_token"));
-                u.setGithubRefreshToken(row.getString("github_refresh_token"));
-                u.setGithubTokenExpiresAt(row.getString("github_token_expires_at"));
                 u.setEmail(row.getString("email"));
                 u.setCreateTime(parseTime(row.getString("create_time")));
                 u.setUpdateTime(parseTime(row.getString("update_time")));

@@ -1,11 +1,6 @@
 package blog.entity;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -48,9 +43,11 @@ public class Music {
     private LocalDateTime lastPlayed;
 
     /** 歌手ID，NULL 表示未分配歌手 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long singerId;
 
     /** 分类ID，NULL 表示未分配分类 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long categoryId;
 
     @TableLogic(value = "0", delval = "1")

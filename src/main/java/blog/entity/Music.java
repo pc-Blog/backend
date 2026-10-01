@@ -43,11 +43,9 @@ public class Music {
     private LocalDateTime lastPlayed;
 
     /** 歌手ID，NULL 表示未分配歌手 */
-    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long singerId;
 
     /** 分类ID，NULL 表示未分配分类 */
-    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long categoryId;
 
     @TableLogic(value = "0", delval = "1")

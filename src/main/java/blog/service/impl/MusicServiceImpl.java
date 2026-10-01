@@ -18,6 +18,7 @@ import blog.util.PageUtil;
 import blog.vo.MusicVO;
 import blog.vo.PlayResultVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -138,13 +139,20 @@ public class MusicServiceImpl extends ServiceImpl<MusicMapper, Music> implements
         checkSingerValid(music.getSingerId());
         checkCategoryValid(music.getCategoryId());
         // 只更新业务字段，file_url / duration / play_count 不由此接口改动
-        Music update = new Music();
-        update.setId(music.getId());
-        update.setTitle(music.getTitle());
-        update.setSingerId(music.getSingerId());
-        update.setCategoryId(music.getCategoryId());
-        update.setIsFavorite(music.getIsFavorite());
-        updateById(update);
+        LambdaUpdateWrapper<Music> wrapper = new LambdaUpdateWrapper<Music>()
+                .eq(Music::getId, music.getId())
+                // 歌手与分类必须用语句级 set 写入：字段级策略会跳过 null，分类就永远清不掉
+                .set(Music::getSingerId, music.getSingerId())
+                .set(Music::getCategoryId, music.getCategoryId())
+                // update(Wrapper) 不带实体，FieldFill.INSERT_UPDATE 不触发，更新时间必须手动写
+                .set(Music::getUpdateTime, LocalDateTime.now());
+        if (music.getTitle() != null) {
+            wrapper.set(Music::getTitle, music.getTitle());
+        }
+        if (music.getIsFavorite() != null) {
+            wrapper.set(Music::getIsFavorite, music.getIsFavorite());
+        }
+        update(wrapper);
     }
 
     @Override
